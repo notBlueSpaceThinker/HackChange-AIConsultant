@@ -1,0 +1,35 @@
+[project]
+name = "ai-service"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.162.2",
+    "llama-index-core>=0.14.25",
+    "llama-index-embeddings-huggingface>=0.8.0",
+    "llama-index-llms-openai-like>=0.8.1",
+    "llama-index-vector-stores-qdrant>=0.10.4",
+    "pydantic-settings>=2.16.2",
+    "ruff>=0.17.4",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = [
+    "E",
+    "W",
+    "I",
+    "B",
+    "UP",
+    "RUF",
+    "FAST",
+]
+
+ignore = [
+    "B008",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "app"]

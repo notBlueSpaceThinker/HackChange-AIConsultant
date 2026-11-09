@@ -1,0 +1,31 @@
+name: "check"
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ruff:
+    name: Ruff check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ai-service
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: "services/ai-service/uv.lock"
+
+      - name: Run Ruff check
+        run: uv run --frozen python scripts/check_ruff.py
