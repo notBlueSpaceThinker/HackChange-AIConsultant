@@ -5,16 +5,24 @@ from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
-from uuid import NAMESPACE_DNS, UUID, uuid5
+from uuid import UUID
 
+from llama_index.core.bridge.pydantic import Field
 from llama_index.core.node_parser.interface import NodeParser
 from llama_index.core.schema import BaseNode, MetadataMode, TextNode
 
 from src.config import SRC_DIR, settings
-from src.schemas.domain.chunk import Chunk, ChunkMetadata, SectionType
+from src.schemas.domain.chunk import (
+    Chunk,
+    ChunkMetadata,
+    DocumentChunk,
+    KBDocument,
+    SectionType,
+    make_chunk_id,
+    make_doc_id,
+)
 
 RULES_PATH = SRC_DIR / "rag" / "section_rules.json"
-
 
 _HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$")
 _FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
@@ -41,7 +49,7 @@ def _ensure_uuid(doc_id: UUID | str) -> UUID:
     try:
         return UUID(str(doc_id))
     except ValueError:
-        return uuid5(NAMESPACE_DNS, str(doc_id))
+        return make_doc_id(str(doc_id))
 
 
 @lru_cache
@@ -168,15 +176,25 @@ def split_long_section(
 
 def chunk_markdown(
     text: str,
-    document_id: UUID | str,
+    document_id: UUID | str = "",
+    source_file: str = "",
+    title: str = "",
+    category: str = "",
+    product_name: str | None = None,
     max_chunk_chars: int = settings.rag.max_chunk_chars,
     chunk_overlap: int = settings.rag.chunk_overlap,
-) -> list[Chunk]:
-    doc_uuid = _ensure_uuid(document_id)
-    chunks: list[Chunk] = []
+) -> list[DocumentChunk]:
+    doc_uuid = _ensure_uuid(document_id or source_file or "document")
+    resolved_source_file = source_file or (str(document_id) if document_id else "")
+
+    sections = parse_markdown(text)
+    first_h1 = next((s.h1 for s in sections if s.h1), "")
+    doc_title = title or first_h1
+
+    chunks: list[DocumentChunk] = []
     chunk_index = 0
 
-    for section in parse_markdown(text):
+    for section in sections:
         breadcrumbs = build_breadcrumbs(section.headings)
         section_type = classify_section(section.headings)
         prefix = f"{breadcrumbs}\n\n" if breadcrumbs else ""
@@ -190,22 +208,26 @@ def chunk_markdown(
         )
         for part in parts:
             metadata = ChunkMetadata(
-                document_id=doc_uuid,
                 h1=section.h1,
                 h2=section.h2,
                 h3=section.h3,
                 h4=section.h4,
                 h5=section.h5,
                 h6=section.h6,
-                breadcrumbs=breadcrumbs,
                 section_type=section_type,
-                chunk_index=chunk_index,
             )
-            chunk_uuid = uuid5(doc_uuid, str(chunk_index))
+            chunk_uuid = make_chunk_id(doc_uuid, chunk_index)
             chunks.append(
-                Chunk(
+                DocumentChunk(
                     chunk_id=chunk_uuid,
-                    text=f"{prefix}{part}",
+                    doc_id=doc_uuid,
+                    source_file=resolved_source_file,
+                    category=category,
+                    title=doc_title,
+                    product_name=product_name,
+                    section_path=breadcrumbs,
+                    chunk_index=chunk_index,
+                    content=f"{prefix}{part}",
                     metadata=metadata,
                 )
             )
@@ -214,16 +236,47 @@ def chunk_markdown(
     return chunks
 
 
+def chunk_document(
+    doc: KBDocument,
+    max_chunk_chars: int | None = None,
+    chunk_overlap: int | None = None,
+) -> list[DocumentChunk]:
+    return chunk_markdown(
+        text=doc.content,
+        document_id=doc.doc_id,
+        source_file=doc.source_file,
+        title=doc.title,
+        category=doc.category,
+        product_name=doc.product_name,
+        max_chunk_chars=max_chunk_chars,
+        chunk_overlap=chunk_overlap,
+    )
+
+
 class MarkdownChunker(NodeParser):
-    max_chunk_chars: int = settings.rag.max_chunk_chars
-    chunk_overlap: int = settings.rag.chunk_overlap
+    max_chunk_chars: int = Field(default=settings.rag.max_chunk_chars)
+    chunk_overlap: int = Field(default=settings.rag.chunk_overlap)
 
     def get_nodes_from_node(self, node: BaseNode) -> list[TextNode]:
         text = node.get_content(metadata_mode=MetadataMode.NONE)
-        doc_id = node.metadata.get("document_id") or node.metadata.get("file_name") or node.node_id
+        doc_id = (
+            node.metadata.get("doc_id")
+            or node.metadata.get("document_id")
+            or node.metadata.get("file_name")
+            or node.node_id
+        )
+        source_file = node.metadata.get("source_file") or node.metadata.get("file_name") or ""
+        title = node.metadata.get("title") or ""
+        category = node.metadata.get("category") or ""
+        product_name = node.metadata.get("product_name")
+
         chunks = chunk_markdown(
             text=text,
             document_id=doc_id,
+            source_file=source_file,
+            title=title,
+            category=category,
+            product_name=product_name,
             max_chunk_chars=self.max_chunk_chars,
             chunk_overlap=self.chunk_overlap,
         )
@@ -239,3 +292,20 @@ class MarkdownChunker(NodeParser):
         for node in nodes:
             result.extend(self.get_nodes_from_node(node))
         return result
+
+
+__all__ = [
+    "Chunk",
+    "ChunkMetadata",
+    "DocumentChunk",
+    "MarkdownChunker",
+    "MarkdownSection",
+    "SectionType",
+    "build_breadcrumbs",
+    "chunk_document",
+    "chunk_markdown",
+    "classify_section",
+    "load_section_rules",
+    "parse_markdown",
+    "split_long_section",
+]
