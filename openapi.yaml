@@ -78,14 +78,19 @@ paths:
     post:
       summary: Отправить запрос в чат и получить ответ LLM
       operationId: sendChatMessage
-      parameters:
-        - name: query
-          in: query
-          required: true
-          description: Текст вопроса пользователя
-          schema:
-            type: string
-          example: Какой тариф выбрать
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: Текст вопроса пользователя
+                  example: Какой тариф выбрать
       responses:
         '200':
           description: Успешный ответ от LLM (JSON-объект)
@@ -99,7 +104,7 @@ paths:
               example:
                 message: "Для вас лучше всего подойдет тариф Стандартный..."
         '400':
-          description: Ошибка валидации (например, пропущен параметр query)
+          description: Ошибка валидации (например, пропущен параметр query в body)
           content:
             application/json:
               schema:
