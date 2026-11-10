@@ -1,8 +1,10 @@
-from llama_index.core.schema import TextNode
-from pydantic import BaseModel, ConfigDict, Field
-from uuid import UUID
 from enum import StrEnum
 from typing import Any
+from uuid import UUID, uuid4
+
+from llama_index.core.schema import TextNode
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class SectionType(StrEnum):
     OVERVIEW = "overview"
@@ -11,6 +13,7 @@ class SectionType(StrEnum):
     FACTS = "facts"
     REQUIREMENTS = "requirements"
     PROCESS = "process"
+
 
 class ChunkMetadata(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -35,10 +38,7 @@ class Chunk(BaseModel):
     metadata: ChunkMetadata
 
     def to_payload(self) -> dict[str, Any]:
-        return {
-            "text": self.text,
-            "metadata": self.metadata.model_dump(mode="json")
-        }
+        return {"text": self.text, "metadata": self.metadata.model_dump(mode="json")}
 
     def to_llama_node(self) -> TextNode:
         return TextNode(
