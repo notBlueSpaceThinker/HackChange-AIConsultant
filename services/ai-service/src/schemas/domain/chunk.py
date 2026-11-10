@@ -1,3 +1,5 @@
+from uuid import UUID, uuid4
+
 from pydantic import BaseModel, Field
 from typing import Dict, Any
 
@@ -6,6 +8,7 @@ class Document(BaseModel):
     Официальная схема документа базы знаний для хакатона МТС True Tech.
     Используется для передачи данных по цепочке: loader -> cleaner -> linearizer.
     """
+    uuid: UUID = Field(default_factory=uuid4)
     page_content: str = Field(
         ..., 
         description="Текст документа (исходный или прошедший очистку/линеаризацию таблиц)"
