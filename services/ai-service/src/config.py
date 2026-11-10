@@ -98,6 +98,9 @@ class RerankerConfig(BaseConfig):
 
 
 class RAGConfig(BaseConfig):
+    model_config = SettingsConfigDict(
+        env_prefix="RAG_",
+    )
     top_k: int = Field(
         default=15,
         validation_alias=AliasChoices("TOP_K", "RAG_TOP_K"),
@@ -106,6 +109,8 @@ class RAGConfig(BaseConfig):
         default="common",
         validation_alias=AliasChoices("CHUNKER", "RAG_CHUNKER"),
     )
+    max_chunk_chars: int = Field(default=1200)
+    chunk_overlap: int = Field(default=150)
 
 
 class QdrantConfig(BaseConfig):
