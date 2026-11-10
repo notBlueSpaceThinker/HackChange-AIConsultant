@@ -22,7 +22,9 @@ class KBDocument(BaseModel):
     filename: str = Field(description="Имя файла, например 21-orem.md")
     category: str = Field(description="Папка верхнего уровня: 00-reference, 10-energy, 20-products")
     title: str = Field(description="Главный заголовок документа (# ...)")
-    product_name: str | None = Field(default=None, description="Название продукта для 20-products/*")
+    product_name: str | None = Field(
+        default=None, description="Название продукта для 20-products/*"
+    )
     content: str = Field(min_length=1)
 
     @classmethod

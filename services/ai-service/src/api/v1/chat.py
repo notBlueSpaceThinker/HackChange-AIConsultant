@@ -6,21 +6,22 @@ from fastapi import APIRouter
 from src.schemas.api.chat import ChatRequest, ChatResponse
 from src.schemas.domain import ConfidenceStatus, ConsultantReply, DialogState, Message
 
-router = APIRouter(prefix="/api/v1", tags=["chat"])
+router = APIRouter(tags=["chat"])
 log = logging.getLogger(__name__)
 
-FALLBACK_ANSWER = "Не могу ответить по доступным материалам. Могу передать вопрос специалисту - оставите контакты?"
+FALLBACK_ANSWER = "Хороший вопрос, но точного ответа у меня нет. " \
+"Оставьте контакты, и наш специалист с вами свяжется."
 
 
-# TODO: заглушка. Заменить на run_pipeline из src/rag/pipeline.py (Артемиюю).
+# TODO: заглушка. Заменить на run_pipeline из src/rag/pipeline.py (Артемийй).
 def run_pipeline(messages: list[Message]) -> ConsultantReply:
     return ConsultantReply(
-        answer="Здесь будет ответ консультанта.",
+        answer="Заглушка: здесь будет ответ консультанта.",
         state=DialogState(confidence_status=ConfidenceStatus.answered),
     )
 
 
-@router.post("/chat")
+@router.post("/completions")
 def chat(request: ChatRequest) -> ChatResponse:
     started = time.perf_counter()
     try:

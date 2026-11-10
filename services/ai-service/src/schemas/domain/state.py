@@ -35,12 +35,22 @@ class ClientProfile(BaseModel):
     company_name: str | None = Field(default=None, description="Название организации")
 
     region: str | None = Field(default=None, description="Регион расположения объекта")
-    object_type: str | None = Field(default=None, description="Тип объекта: склад, магазин, завод, СНТ и т.п.")
-    power_kw: float | None = Field(default=None, ge=0, description="Присоединённая или нужная мощность, кВт")
-    monthly_consumption: float | None = Field(default=None, ge=0, description="Потребление в месяц, кВт·ч")
-    voltage_level: str | None = Field(default=None, description="Уровень напряжения, как назвал клиент")
+    object_type: str | None = Field(
+        default=None, description="Тип объекта: склад, магазин, завод, СНТ и т.п."
+    )
+    power_kw: float | None = Field(
+        default=None, ge=0, description="Присоединённая или нужная мощность, кВт"
+    )
+    monthly_consumption: float | None = Field(
+        default=None, ge=0, description="Потребление в месяц, кВт·ч"
+    )
+    voltage_level: str | None = Field(
+        default=None, description="Уровень напряжения, как назвал клиент"
+    )
 
-    target_product: Product | None = Field(default=None, description="Какой продукт Energytool нужен клиенту")
+    target_product: Product | None = Field(
+        default=None, description="Какой продукт Energytool нужен клиенту"
+    )
     problem_summary: str | None = Field(default=None, description="Задача клиента одной фразой")
 
     @field_validator("phone")
@@ -74,7 +84,8 @@ class DialogState(BaseModel):
     confidence_status: ConfidenceStatus
     is_ready_for_lead: bool = False
     missing_fields: list[str] = Field(
-        default_factory=list, description="Имена полей ClientProfile, которых не хватает для расчёта"
+        default_factory=list,
+        description="Имена полей ClientProfile, которых не хватает для расчёта",
     )
     profile: ClientProfile = Field(default_factory=ClientProfile)
     lead_summary: str | None = None

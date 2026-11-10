@@ -4,34 +4,38 @@ from pydantic import BaseModel, Field
 
 from src.schemas.domain import ConfidenceStatus, ConsultantReply, Message, ScoredChunk, Timings
 
-AUTHOR_TO_ROLE = {"user": "user", "llm": "assistant"}
+AUTHOR_TO_ROLE = {"user": "user", "LLM": "assistant"}
 
 
 class MessageHistoryItem(BaseModel):
-    author: Literal["llm", "user"] = Field(description="Автор сообщения: user (клиент) или llm (бот)")
+    author: Literal["LLM", "user"] = Field(
+        description="Автор сообщения: user (клиент) или LLM (бот)"
+    )
     message: str = Field(min_length=1, max_length=8000, description="Текст сообщения")
-    files_trainscript: dict[str, str] = Field(
+    files_transcript: dict[str, str] = Field(
         default_factory=dict,
         description="Расшифровки файлов: имя файла -> текст (например, {'123.png': '...'})",
     )
 
     def to_domain(self) -> Message:
-        return Message(role=AUTHOR_TO_ROLE[self.author], content=self.message, files=self.files_trainscript)
+        return Message(
+            role=AUTHOR_TO_ROLE[self.author], content=self.message, files=self.files_transcript
+        )
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(min_length=1, max_length=8000, description="Текущее сообщение клиента")
+    msg: str = Field(min_length=1, max_length=8000, description="Текущее сообщение клиента")
     history: list[MessageHistoryItem] = Field(
         default_factory=list,
         description="Предыдущие сообщения диалога",
     )
-    files_trainscript: dict[str, str] = Field(
+    files_transcript: dict[str, str] = Field(
         default_factory=dict,
         description="Расшифровки файлов: имя файла -> текст (например, {'123.png': '...'})",
     )
 
     def to_messages(self) -> list[Message]:
-        current = Message(role="user", content=self.message, files=self.files_trainscript)
+        current = Message(role="user", content=self.msg, files=self.files_transcript)
         return [item.to_domain() for item in self.history] + [current]
 
 
@@ -57,12 +61,30 @@ class SourceRef(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    message: str = Field(description="Ответ консультанта")
+    response: str = Field(description="Ответ консультанта")
     status: ConfidenceStatus = Field(
         default=ConfidenceStatus.answered,
-        description="answered - ответ найден, need_clarification - уточнить, out_of_scope - не по теме",
+        description="answered - ответ найден, " \
+        "need_clarification - уточнить, out_of_scope - не по теме",
     )
     ready_for_lead: bool = Field(
-        default=False, description="true - клиент готов оставить заявку, нужно показать форму контактов"
+        default=False,
+        description="true - клиент готов оставить заявку, нужно показать форму контактов",
     )
-    sources:
+    sources: list[SourceRef] = Field(
+        default_factory=list,
+        description="Документы базы знаний, использованные в ответе (для режима отладки)",
+    )
+    timings: Timings = Field(
+        default_factory=Timings, description="Время этапов в миллисекундах (для режима отладки)"
+    )
+
+    @classmethod
+    def from_reply(cls, reply: ConsultantReply) -> "ChatResponse":
+        return cls(
+            response=reply.answer,
+            status=reply.state.confidence_status,
+            ready_for_lead=reply.state.is_ready_for_lead,
+            sources=[SourceRef.from_scored(item) for item in reply.chunks],
+            timings=reply.timings,
+        )
