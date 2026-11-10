@@ -16,6 +16,7 @@ class BaseConfig(BaseSettings):
         env_file=SERVICE_DIR / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        env_ignore_empty=True
     )
 
 
@@ -56,27 +57,44 @@ class EmbeddingConfig(BaseConfig):
 
     url: str = Field(
         default="http://127.0.0.1:8080/v1",
-        validation_alias=AliasChoices("LLM_BASE_URL", "OPENAI_BASE_URL", "EMB_URL"),
+        validation_alias=AliasChoices("EMB_URL", "LLM_BASE_URL", "OPENAI_BASE_URL"),
     )
     model: str | None = Field(
         default=None,
         validation_alias=AliasChoices("EMB_MODEL"),
     )
+    api_key: str = Field(
+        default="no-key",
+        validation_alias=AliasChoices("EMB_API_KEY", "LLM_API_KEY", "OPENAI_API_KEY"),
+    )
+    embed_dim: int = 1024
+    timeout: float = 60.0
+    max_retries: int = 5
 
 
 class RerankerConfig(BaseConfig):
+    model_config = SettingsConfigDict(
+        env_prefix="RRK_",
+    )
+
     url: str = Field(
         default="http://127.0.0.1:8080/v1",
-        validation_alias=AliasChoices("LLM_BASE_URL", "OPENAI_BASE_URL", "RRK_URL"),
+        validation_alias=AliasChoices("RRK_URL", "LLM_BASE_URL", "OPENAI_BASE_URL"),
     )
     model: str | None = Field(
         default=None,
         validation_alias=AliasChoices("RERANKER_MODEL", "RRK_MODEL"),
     )
+    api_key: str = Field(
+        default="no-key",
+        validation_alias=AliasChoices("RRK_API_KEY", "LLM_API_KEY", "OPENAI_API_KEY"),
+    )
     top_n: int = Field(
         default=5,
         validation_alias=AliasChoices("RERANKER_TOP_N", "RRK_TOP_N"),
     )
+    timeout: float = 60.0
+    max_retries: int = 5
 
 
 class RAGConfig(BaseConfig):

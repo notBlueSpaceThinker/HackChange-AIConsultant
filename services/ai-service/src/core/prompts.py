@@ -19,8 +19,6 @@ class ConsultantPrompt:
 ---------------------
 {context}
 ---------------------
-
-{dialog_history}
 Пользователь: {question}
 
 Сформулируй краткий (до 150 слов), точный ответ консультанта по правилам. В конце задай один уточняющий вопрос или предложи оставить заявку если на основе контекста диалога понятно что данных о пользователе достаточно:
@@ -31,11 +29,8 @@ class ConsultantPrompt:
         cls,
         context: str,
         question: str,
-        dialog_history: str | None = None,
     ) -> str:
-        history_str = f"История диалога:\n{dialog_history}\n" if dialog_history else ""
         return cls.user_template.format(
             context=context.strip(),
-            dialog_history=history_str,
             question=question.strip(),
         )
