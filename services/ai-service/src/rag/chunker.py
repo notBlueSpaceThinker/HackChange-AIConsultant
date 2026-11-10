@@ -13,7 +13,6 @@ from llama_index.core.schema import BaseNode, MetadataMode, TextNode
 
 from src.config import SRC_DIR, settings
 from src.schemas.domain.chunk import (
-    Chunk,
     ChunkMetadata,
     DocumentChunk,
     KBDocument,
