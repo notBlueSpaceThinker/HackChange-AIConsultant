@@ -9,8 +9,10 @@ from src.schemas.domain import ConfidenceStatus, ConsultantReply, DialogState, M
 router = APIRouter(tags=["chat"])
 log = logging.getLogger(__name__)
 
-FALLBACK_ANSWER = "Хороший вопрос, но точного ответа у меня нет. " \
-"Оставьте контакты, и наш специалист с вами свяжется."
+FALLBACK_ANSWER = (
+    "Хороший вопрос, но точного ответа у меня нет. "
+    "Оставьте контакты, и наш специалист с вами свяжется."
+)
 
 
 # TODO: заглушка. Заменить на run_pipeline из src/rag/pipeline.py (Артемийй).

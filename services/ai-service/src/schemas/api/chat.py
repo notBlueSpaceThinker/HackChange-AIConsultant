@@ -64,7 +64,7 @@ class ChatResponse(BaseModel):
     response: str = Field(description="Ответ консультанта")
     status: ConfidenceStatus = Field(
         default=ConfidenceStatus.answered,
-        description="answered - ответ найден, " \
+        description="answered - ответ найден, "
         "need_clarification - уточнить, out_of_scope - не по теме",
     )
     ready_for_lead: bool = Field(
