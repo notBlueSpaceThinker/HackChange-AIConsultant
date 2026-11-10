@@ -1,0 +1,114 @@
+openapi: 3.0.3
+info:
+  title: User Message & Files API
+  version: 1.0.0
+paths:
+  /completions:
+    post:
+      summary: Отправка сообщения и расшифровок
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - msg
+                - files_transcript
+                - history
+              properties:
+                msg:
+                  type: string
+                  example: Привет! Посмотри файлы во вложении.
+                history:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - author
+                      - message
+                      - files_transcript
+                    properties:
+                      author:
+                        type: string
+                        enum:
+                          - user
+                          - LLM
+                      message:
+                        type: string
+                      files_transcript:
+                        type: object
+                        additionalProperties:
+                          type: string
+                        example:
+                          report.mp3: Расшифровка аудиозаписи...
+                          notes.txt: Содержимое текстового файла...
+                  example:
+                    - author: user
+                      message: Какая сегодня погода?
+                      files_transcript: {}
+                    - author: LLM
+                      message: Сегодня солнечная погода.
+                      files_transcript: {}
+                    - author: user
+                      message: Проанализируй приложенный отчет.
+                      files_transcript:
+                        report.mp3: Текстовая расшифровка аудиозаписи отчета...
+                files_transcript:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  example:
+                    audio_report.mp3: Текстовая расшифровка аудиозаписи отчета...
+                    meeting_notes.txt: Содержимое текстового файла встречи...
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    example: Ответ ЛЛМ
+                required:
+                  - response
+  /message:
+    post:
+      summary: Отправить запрос в чат и получить ответ LLM
+      operationId: sendChatMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: Текст вопроса пользователя
+                  example: Какой тариф выбрать
+      responses:
+        '200':
+          description: Успешный ответ от LLM (JSON-объект)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "Для вас лучше всего подойдет тариф Стандартный..."
+        '400':
+          description: Ошибка валидации (например, пропущен параметр query в body)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
