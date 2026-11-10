@@ -121,6 +121,11 @@ class Settings(BaseConfig):
     max_workers: int = Field(default=5, validation_alias=AliasChoices("MAX_WORKERS"))
     mock_mode: bool = Field(default=False, validation_alias=AliasChoices("MOCK_MODE"))
 
+    cors_origins: list[str] = Field(
+        default=["*"],
+        validation_alias=AliasChoices("CORS_ORIGINS"),
+    )
+
     llm: LLMConfig = Field(default_factory=LLMConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
     reranker: RerankerConfig = Field(default_factory=RerankerConfig)
