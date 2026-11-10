@@ -10,7 +10,7 @@ from src.config import settings
 
 @lru_cache
 def get_embedding_model() -> BaseEmbedding:
-    if settings.is_mock:
+    if settings.is_embedding_mock:
         embed_model: BaseEmbedding = MockEmbedding(embed_dim=settings.embedding.embed_dim)
     else:
         embed_model = OpenAILikeEmbedding(

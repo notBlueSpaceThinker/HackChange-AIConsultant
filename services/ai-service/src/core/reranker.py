@@ -70,7 +70,7 @@ class Reranker:
 
 @lru_cache
 def get_reranker() -> MockReranker | Reranker:
-    if settings.is_mock:
+    if settings.is_reranker_mock:
         return MockReranker(top_n=settings.reranker.top_n)
     return Reranker(
         api_base=settings.reranker.url,

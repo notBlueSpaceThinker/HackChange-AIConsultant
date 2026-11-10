@@ -39,7 +39,7 @@ class MockLLM(CustomLLM):
 
 @lru_cache
 def get_llm() -> LLM:
-    if settings.is_mock:
+    if settings.is_llm_mock:
         llm = MockLLM()
     else:
         llm = OpenAILike(

@@ -16,7 +16,7 @@ class BaseConfig(BaseSettings):
         env_file=SERVICE_DIR / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
-        env_ignore_empty=True
+        env_ignore_empty=True,
     )
 
 
@@ -128,12 +128,21 @@ class Settings(BaseConfig):
     qdrant: QdrantConfig = Field(default_factory=QdrantConfig)
 
     @property
+    def is_llm_mock(self) -> bool:
+        return self.mock_mode or not self.llm.model
+
+    @property
+    def is_embedding_mock(self) -> bool:
+        return self.mock_mode or not self.embedding.model
+
+    @property
+    def is_reranker_mock(self) -> bool:
+        return self.mock_mode or not self.reranker.model
+
+    @property
     def is_mock(self) -> bool:
-        return (
-            self.mock_mode
-            or self.llm.model is None
-            or self.embedding.model is None
-            or self.reranker.model is None
+        return self.mock_mode or (
+            self.is_llm_mock and self.is_embedding_mock and self.is_reranker_mock
         )
 
 
