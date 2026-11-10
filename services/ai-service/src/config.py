@@ -44,8 +44,9 @@ class LLMConfig(BaseConfig):
         default=0.2,
         validation_alias=AliasChoices("TEMPERATURE", "LLM_TEMPERATURE"),
     )
-    timeout: int = 60
+    timeout: float = 60.0
     context_window: int = 10000
+    max_retries: int = 5
 
 
 class EmbeddingConfig(BaseConfig):

@@ -29,7 +29,13 @@ extend-select = [
 
 ignore = [
     "B008",
+    "RUF001",
+    "RUF002",
+    "RUF003",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"src/core/prompts.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src", "app"]
