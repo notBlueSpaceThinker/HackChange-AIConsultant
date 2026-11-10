@@ -13,7 +13,6 @@ from llama_index.core.schema import BaseNode, MetadataMode, TextNode
 
 from src.config import SRC_DIR, settings
 from src.schemas.domain.chunk import (
-    Chunk,
     ChunkMetadata,
     DocumentChunk,
     KBDocument,
@@ -238,8 +237,8 @@ def chunk_markdown(
 
 def chunk_document(
     doc: KBDocument,
-    max_chunk_chars: int | None = None,
-    chunk_overlap: int | None = None,
+    max_chunk_chars: int = settings.rag.max_chunk_chars,
+    chunk_overlap: int = settings.rag.chunk_overlap,
 ) -> list[DocumentChunk]:
     return chunk_markdown(
         text=doc.content,
@@ -292,20 +291,3 @@ class MarkdownChunker(NodeParser):
         for node in nodes:
             result.extend(self.get_nodes_from_node(node))
         return result
-
-
-__all__ = [
-    "Chunk",
-    "ChunkMetadata",
-    "DocumentChunk",
-    "MarkdownChunker",
-    "MarkdownSection",
-    "SectionType",
-    "build_breadcrumbs",
-    "chunk_document",
-    "chunk_markdown",
-    "classify_section",
-    "load_section_rules",
-    "parse_markdown",
-    "split_long_section",
-]
