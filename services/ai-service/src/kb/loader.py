@@ -2,6 +2,7 @@ import zipfile
 from pathlib import Path, PurePosixPath
 from typing import List
 from src.schemas.domain.chunk import Document
+from src.kb.cleaner import clean_cell_text, clean_documents
 
 def load_kb(source: Path) -> List[Document]:
     """
@@ -129,3 +130,12 @@ if __name__ == "__main__":
         print(f"\nТест упал с ошибкой:")
         import traceback
         traceback.print_exc()
+
+    docs = load_kb(target_path)
+    print(f" Всего извлечено документов: {len(docs)}")
+
+    cleaned_docs = clean_documents(docs)
+    print(" Очистка текста документов выполнена успешно!")
+
+    dirty_cell = "   Параметр   \n   мощности:  выше 15 кВт   "
+    print(f"\n Тест clean_cell_text:\n Исходная: '{dirty_cell}'\n Очищенная: '{clean_cell_text(dirty_cell)}'")
