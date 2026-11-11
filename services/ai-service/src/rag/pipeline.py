@@ -23,6 +23,7 @@ def _format_document_chunk(document_chunk: DocumentChunk | ScoredChunk) -> str:
 def _format_context(context: list[DocumentChunk | ScoredChunk]) -> str:
     return "\n=======\n".join(_format_document_chunk(chunk) for chunk in context)
 
+
 async def run_pipeline(request: ChatRequest) -> ConsultantReply:
     """
     Runs the RAG pipeline.
