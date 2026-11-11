@@ -82,11 +82,6 @@ class DocumentChunk(BaseModel):
     hype_questions: list[str] = Field(default_factory=list, description="HyPE-вопросы к чанку")
     metadata: ChunkMetadata = Field(default_factory=ChunkMetadata)
 
-    @property
-    def text(self) -> str:
-        """Алиас для обратной совместимости."""
-        return self.content
-
     @classmethod
     def from_document(
         cls,

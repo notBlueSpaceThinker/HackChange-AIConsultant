@@ -111,6 +111,8 @@ class RAGConfig(BaseConfig):
     )
     max_chunk_chars: int = Field(default=1200)
     chunk_overlap: int = Field(default=150)
+    expand_limit_per_doc: int = Field(default=3)
+    expand_top_docs: int = Field(default=5)
 
 
 class QdrantConfig(BaseConfig):
