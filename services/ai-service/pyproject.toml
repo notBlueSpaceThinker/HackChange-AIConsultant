@@ -4,12 +4,15 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.162.2",
+    "fastembed>=0.9.1",
     "llama-index-core>=0.14.25",
     "llama-index-embeddings-openai-like>=0.4.0",
     "llama-index-llms-openai-like>=0.8.1",
     "llama-index-vector-stores-qdrant>=0.10.4",
     "pydantic-settings>=2.16.2",
+    "qdrant-client>=1.20.0",
     "ruff>=0.17.4",
+    "uvicorn>=0.54.0",
 ]
 
 [tool.ruff]
@@ -35,7 +38,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"src/core/prompts.py" = ["E501"]
+"src/rag/prompts.py" = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["src", "app"]

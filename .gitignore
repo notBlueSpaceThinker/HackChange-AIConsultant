@@ -187,6 +187,7 @@ desktop.ini
 
 # Hackathon Data & ML / AI models
 data/
+.data/
 !data/.gitkeep
 datasets/
 !datasets/.gitkeep

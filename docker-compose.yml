@@ -8,3 +8,11 @@ services:
     volumes:
       - .data/qdrant_storage:/qdrant/storage
     restart: unless-stopped
+    
+  web-app:
+    build:
+      context: ./services/web    
+      dockerfile: Dockerfile     
+    container_name: go_chat_app
+    ports:
+      - "8082:8080"
