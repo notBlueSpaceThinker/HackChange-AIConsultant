@@ -1,141 +1,84 @@
 import zipfile
 from pathlib import Path, PurePosixPath
-from typing import List
-from src.schemas.domain.chunk import Document
-from src.kb.cleaner import clean_cell_text, clean_documents
 
-def load_kb(source: Path) -> List[Document]:
-    """
-    Загружает базу знаний из ZIP-архива или распакованной директории.
-    Скрывает разницу между источниками и возвращает единый список Document.
-    
-    :param source: Путь к директории БЗ или к файлу knowledge-base.zip
-    :return: list[Document] для передачи в cleaner -> linearizer
-    """
-    documents: List[Document] = []
-
-    if not source.exists():
-        raise FileNotFoundError(f"Источник базы знаний не найден по пути: {source}")
-
-    if source.is_file() and source.suffix.lower() == '.zip':
-        with zipfile.ZipFile(source, 'r') as archive:
-            for file_info in sorted(archive.infolist(), key=lambda x: x.filename):
-                filename_str = file_info.filename
-                
-                if '__MACOSX' in filename_str or file_info.is_dir() or not filename_str.lower().endswith('.md'):
-                    continue
-
-                relative_path = PurePosixPath(filename_str)
-
-                category = relative_path.parts[0] if relative_path.parts else "unknown"
-                filename = relative_path.name
-
-                with archive.open(file_info, 'r') as f:
-                    content_bytes = f.read()
-                content = content_bytes.decode('utf-8-sig')
-
-                doc = _build_document(content, category, filename)
-                documents.append(doc)
-
-    elif source.is_dir():
-
-        for file_path in sorted(source.rglob("*.md")):
-
-            try:
-                relative_path = file_path.relative_to(source)
-            except ValueError:
-                relative_path = file_path
-
-            category = relative_path.parts[0] if relative_path.parts else "unknown"
-            filename = file_path.name
-
-            content = file_path.read_text(encoding='utf-8-sig')
-
-            doc = _build_document(content, category, filename)
-            documents.append(doc)
-            
-    else:
-        raise ValueError(f"Неподдерживаемый тип источника базы знаний (ожидался ZIP или папка): {source}")
-
-    return documents
+from src.schemas.domain.chunk import KBDocument
 
 
-def _build_document(content: str, category: str, filename: str) -> Document:
-    """Вспомогательная функция для парсинга первой строки и нормализации текста."""
-    normalized_content = content.replace('\r\n', '\n')
+def _extract_title(content: str, fallback: str) -> str:
+    """Извлекает заголовок первого уровня (# ...) из текста документа."""
+    for line in content.split("\n"):
+        cleaned = line.strip()
+        if cleaned.startswith("#"):
+            title = cleaned.lstrip("#").strip()
+            if title:
+                return title
+    return fallback
 
-    lines = normalized_content.split('\n')
-    product_name = "Без названия"
-    
-    if lines and lines[0].strip().startswith('#'):
-        product_name = lines[0].strip().lstrip('#').strip()
-    else:
-        for line in lines:
-            if line.strip().startswith('#'):
-                product_name = line.strip().lstrip('#').strip()
-                break
 
-    return Document(
-        page_content=normalized_content,
-        metadata={
-            "category": category,
-            "filename": filename,
-            "product_name": product_name
-        }
+def _build_document(relative_path_str: str, content: str) -> KBDocument:
+    """Нормализует текст и собирает замороженную модель KBDocument."""
+    normalized_content = content.replace("\r\n", "\n")
+    clean_rel_path = relative_path_str.replace("\\", "/").strip("/")
+    parts = clean_rel_path.split("/")
+
+    category = parts[0] if len(parts) > 1 else ""
+    filename = parts[-1]
+    title = _extract_title(normalized_content, fallback=filename)
+
+    # Поле product_name заполняется только для продуктовых файлов (20-products/*)
+    product_name = title if category == "20-products" else None
+
+    return KBDocument.from_file(
+        source_file=clean_rel_path,
+        title=title,
+        content=normalized_content,
+        product_name=product_name,
     )
 
 
-if __name__ == "__main__":
-    import sys
+def load_kb(source: Path) -> list[KBDocument]:
+    """
+    Загружает все .md файлы из распакованной директории или ZIP-архива.
+    Возвращает детерминированный список KBDocument.
+    """
+    if not source.exists():
+        raise FileNotFoundError(f"Источник базы знаний не найден: {source}")
 
-    paths_to_check = [
-        Path("knowledge-base.zip"),
-        Path("knowledge-base"),
-        Path("data/knowledge-base.zip"),
-        Path("data/knowledge-base")
-    ]
-    
-    target_path = None
-    for p in paths_to_check:
-        if p.exists():
-            target_path = p
-            if p.is_file():
-                print(f"Найдено на диске: {p} (Режим тестирования ZIP)")
-            else:
-                print(f"Найдено на диске: папка {p}/ (Режим тестирования папки)")
-            break
-            
-    if not target_path:
-        print(f"Ошибка, не найдно ни knowledge-base.zip, ни папка knowledge-base")
-        print("Текущая директория поиска:", Path(".").absolute())
-        sys.exit(1)
-        
-    try:
-        docs = load_kb(target_path)
+    documents: list[KBDocument] = []
 
-        print(f" Всего извлечено документов: {len(docs)}")
+    if source.is_file() and source.suffix.lower() == ".zip":
+        with zipfile.ZipFile(source, "r") as archive:
+            for file_info in sorted(archive.infolist(), key=lambda x: x.filename):
+                raw_name = file_info.filename
+                if (
+                    "__MACOSX" in raw_name
+                    or file_info.is_dir()
+                    or not raw_name.lower().endswith(".md")
+                ):
+                    continue
 
-        import json
-        output_json = Path("parsed_kb.json")
-        
-        json_data = [doc.to_dict() for doc in docs]
-        
-        output_json.write_text(
-            json.dumps(json_data, ensure_ascii=False, indent=2), 
-            encoding="utf-8"
-        )
-        print(f"Данные успешно сохранены на диск в файл: {output_json.absolute()}")
+                posix_path = PurePosixPath(raw_name)
+                if len(posix_path.parts) > 2:
+                    rel_path = "/".join(posix_path.parts[-2:])
+                else:
+                    rel_path = posix_path.as_posix()
 
-    except Exception as e:
-        print(f"\nТест упал с ошибкой:")
-        import traceback
-        traceback.print_exc()
+                with archive.open(file_info, "r") as f:
+                    content = f.read().decode("utf-8-sig")
 
-    docs = load_kb(target_path)
-    print(f" Всего извлечено документов: {len(docs)}")
+                documents.append(_build_document(rel_path, content))
 
-    cleaned_docs = clean_documents(docs)
-    print(" Очистка текста документов выполнена успешно!")
+    elif source.is_dir():
+        for file_path in sorted(source.rglob("*.md")):
+            try:
+                rel_path = file_path.relative_to(source).as_posix()
+            except ValueError:
+                rel_path = file_path.name
 
-    dirty_cell = "   Параметр   \n   мощности:  выше 15 кВт   "
-    print(f"\n Тест clean_cell_text:\n Исходная: '{dirty_cell}'\n Очищенная: '{clean_cell_text(dirty_cell)}'")
+            content = file_path.read_text(encoding="utf-8-sig")
+            documents.append(_build_document(rel_path, content))
+
+    else:
+        raise ValueError(f"Неподдерживаемый тип источника базы знаний: {source}")
+
+    return documents
