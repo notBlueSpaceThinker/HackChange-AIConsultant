@@ -8,11 +8,27 @@ services:
     volumes:
       - .data/qdrant_storage:/qdrant/storage
     restart: unless-stopped
-    
+
   web-app:
     build:
-      context: ./services/web    
-      dockerfile: Dockerfile     
+      context: ./services/web
+      dockerfile: Dockerfile
     container_name: go_chat_app
     ports:
       - "8082:8080"
+
+  ai-service:
+    build:
+      context: ./services/ai-service
+      dockerfile: Dockerfile
+    container_name: ai_service
+    environment:
+      QDRANT_URL: http://qdrant:6333
+    env_file:
+      - path: ./services/ai-service/.env
+        required: false
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qdrant
+    restart: unless-stopped
