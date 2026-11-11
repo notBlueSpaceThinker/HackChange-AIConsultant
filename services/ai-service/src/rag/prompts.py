@@ -1,5 +1,5 @@
 class ConsultantPrompt:
-    system = """Ты — профессиональный, дружелюбный и внимательный ИИ-консультант сервиса МТС Energytool.
+    SYSTEM_PROMPT = """Ты — профессиональный, дружелюбный и внимательный ИИ-консультант сервиса МТС Energytool.
 Твоя главная цель — понять задачу клиента, помочь разобраться в возможностях продуктов Energytool и довести диалог до заявки менеджеру.
 
 СТРОГИЕ ПРАВИЛА И ОГРАНИЧЕНИЯ:
@@ -19,7 +19,7 @@ class ConsultantPrompt:
 ---------------------
 {context}
 ---------------------
-Пользователь: {question}
+Пользователь: {query}
 
 Сформулируй краткий (до 150 слов), точный ответ консультанта по правилам. В конце задай один уточняющий вопрос или предложи оставить заявку если на основе контекста диалога понятно что данных о пользователе достаточно:
 """
@@ -27,10 +27,14 @@ class ConsultantPrompt:
     @classmethod
     def format_user_prompt(
         cls,
+        query: str,
         context: str,
-        question: str,
     ) -> str:
         return cls.user_template.format(
             context=context.strip(),
-            question=question.strip(),
+            query=query.strip(),
         )
+
+
+class IrrelevantContext:
+    PROMPT = "Релевантные фрагменты для запроса пользователя не найдены"

@@ -112,8 +112,16 @@ class DocumentChunk(BaseModel):
         return cls.model_validate(payload)
 
     def as_context(self) -> str:
-        header = " > ".join(part for part in (self.title, self.section_path) if part)
-        return f"[{self.source_file}] {header}\n{self.content}"
+        if self.section_path and self.title and not self.section_path.startswith(self.title):
+            header = f"{self.title} > {self.section_path}"
+        else:
+            header = self.section_path or self.title
+
+        body = self.content
+        if self.section_path and body.startswith(self.section_path):
+            body = body.removeprefix(self.section_path).lstrip("\n")
+        prefix = f"[{self.source_file}] {header}".strip()
+        return f"{prefix}\n{body}"
 
     def to_llama_node(self) -> TextNode:
         payload = self.to_payload()
