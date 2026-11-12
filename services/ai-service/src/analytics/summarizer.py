@@ -31,7 +31,7 @@ async def run_pipeline(
         prompt=prompt,
         history=history,
         system_prompt=SUMMARIZE_PROMPT,
-        temperature=0.1,
-        max_tokens=500,
+        temperature=0.0,
+        think=False,
     )
     return raw_answer.strip()
