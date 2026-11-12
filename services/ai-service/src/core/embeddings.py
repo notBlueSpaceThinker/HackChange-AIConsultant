@@ -1,7 +1,6 @@
 from functools import lru_cache
 
-from llama_index.core import Settings
-from llama_index.core.base.embeddings.base import BaseEmbedding, Embedding
+from llama_index.core.base.embeddings.base import BaseEmbedding
 from llama_index.core.embeddings import MockEmbedding
 from llama_index.embeddings.openai_like import OpenAILikeEmbedding
 
@@ -20,15 +19,16 @@ def get_embedding_model() -> BaseEmbedding:
             timeout=settings.embedding.timeout,
             max_retries=settings.embedding.max_retries,
         )
-    Settings.embed_model = embed_model
     return embed_model
 
 
-async def embed_query(query: str) -> Embedding:
+async def embed_query(query: str) -> list[float]:
     model = get_embedding_model()
     return await model.aget_query_embedding(query)
 
 
-async def embed_texts(texts: list[str]) -> list[Embedding]:
+async def embed_texts(texts: list[str]) -> list[list[float]]:
+    if not texts:
+        return []
     model = get_embedding_model()
     return await model.aget_text_embedding_batch(texts)

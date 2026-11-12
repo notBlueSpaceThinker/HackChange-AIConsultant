@@ -1,7 +1,6 @@
 from functools import lru_cache
 from typing import Any
 
-from llama_index.core import Settings
 from llama_index.core.llms import (
     LLM,
     ChatMessage,
@@ -14,6 +13,7 @@ from llama_index.core.llms.custom import CustomLLM
 from llama_index.llms.openai_like import OpenAILike
 
 from src.config import settings
+from src.schemas.domain.state import Message
 
 
 class MockLLM(CustomLLM):
@@ -53,31 +53,32 @@ def get_llm() -> LLM:
             max_retries=settings.llm.max_retries,
             is_chat_model=True,
         )
-    Settings.llm = llm
     return llm
 
 
-def _format_to_llama_messages(
-    prompt: str,
-    history: list[ChatMessage] | None = None,
-    system_prompt: str | None = None,
-) -> list[ChatMessage]:
-    messages: list[ChatMessage] = []
-    if system_prompt:
-        messages.append(ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
-    if history:
-        messages.extend(history)
-    messages.append(ChatMessage(role=MessageRole.USER, content=prompt))
-    return messages
+def _format_to_llama_message(
+    message: Message,
+) -> ChatMessage:
+    return ChatMessage(
+        role=MessageRole.USER if message.role == "user" else MessageRole.ASSISTANT,
+        content=message.content,
+    )
 
 
 async def generate_response(
     prompt: str,
-    history: list[ChatMessage] | None = None,
+    history: list[Message] | None = None,
     system_prompt: str | None = None,
     **kwargs: Any,
 ) -> str:
     llm = get_llm()
-    messages = _format_to_llama_messages(prompt, history, system_prompt)
+    messages = []
+
+    if system_prompt:
+        messages.append(ChatMessage(role=MessageRole.SYSTEM, content=system_prompt))
+    if history:
+        messages.extend(_format_to_llama_message(message) for message in history)
+    messages.append(ChatMessage(role=MessageRole.USER, content=prompt))
+
     response = await llm.achat(messages, **kwargs)
     return str(response.message.content).strip()

@@ -1,18 +1,12 @@
 from functools import lru_cache
 
-from llama_index.vector_stores.qdrant import QdrantVectorStore
-from qdrant_client import AsyncQdrantClient, QdrantClient, models
+from qdrant_client import AsyncQdrantClient, models
 
 from src.config import settings
 
 DENSE_VECTOR_NAME = "dense"
 SPARSE_VECTOR_NAME = "sparse"
 SPARSE_MODEL_NAME = "Qdrant/bm25"
-
-
-@lru_cache
-def get_qdrant_client() -> QdrantClient:
-    return QdrantClient(location=settings.qdrant.url)
 
 
 @lru_cache
@@ -43,28 +37,11 @@ async def create_collection_if_not_exists(
         )
 
 
-@lru_cache
-def get_vector_store() -> QdrantVectorStore:
-    return QdrantVectorStore(
-        collection_name=settings.qdrant.collection_name,
-        client=None if settings.qdrant.url == ":memory:" else get_qdrant_client(),
-        aclient=get_async_qdrant_client(),
-        enable_hybrid=True,
-        fastembed_sparse_model=SPARSE_MODEL_NAME,
-        dense_vector_name=DENSE_VECTOR_NAME,
-        sparse_vector_name=SPARSE_VECTOR_NAME,
-    )
-
-
 def clear_cache() -> None:
     get_async_qdrant_client.cache_clear()
-    get_qdrant_client.cache_clear()
-    get_vector_store.cache_clear()
 
 
 async def close_qdrant_client() -> None:
     if get_async_qdrant_client.cache_info().currsize:
         await get_async_qdrant_client().close()
-    if get_qdrant_client.cache_info().currsize:
-        get_qdrant_client().close()
     clear_cache()
