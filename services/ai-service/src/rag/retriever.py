@@ -88,7 +88,6 @@ async def retrieve(
     query: str,
     top_k: int = settings.rag.top_k,
     with_rerank: bool = True,
-    reranker_threshold: float = settings.rag.reranker_threshold,
     with_expansion: bool = True,
 ) -> list[ScoredChunk]:
     client = get_async_qdrant_client()
