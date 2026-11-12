@@ -8,6 +8,7 @@ from typing import Any
 
 from src.config import SRC_DIR, settings
 from src.schemas.domain.chunk import (
+    Chunk,
     ChunkMetadata,
     KBDocument,
     SectionType,
