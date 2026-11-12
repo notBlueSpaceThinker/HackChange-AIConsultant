@@ -46,3 +46,7 @@ class ConsultantPrompt:
             query=query.strip(),
             lead_marker=cls.LEAD_MARKER,
         )
+
+
+class IrrelevantContext:
+    PROMPT = "Релевантные фрагменты для запроса пользователя не найдены"
