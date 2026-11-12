@@ -1,7 +1,7 @@
 from src.core.llm import generate_response
 from src.schemas.domain.state import Message
 
-SYSTEM_PROMPT = """
+SUMMARIZE_PROMPT = """
     Ты - ассистент компании Energytool.
     К тебе обращается пользователь.
     Составь структурированное резюме проблемы пользователя.
@@ -26,5 +26,5 @@ async def build_lead_summary(messages: list[Message], previous_summary: str | No
     parts.append(f"Новое сообщение: {last_user_msg}")
     parts.append("Обновленное резюме:")
     user_prompt = "\n\n".join(parts)
-    answer = await generate_response(prompt=user_prompt, system_prompt=SYSTEM_PROMPT)
+    answer = await generate_response(prompt=user_prompt, system_prompt=SUMMARIZE_PROMPT)
     return answer.strip()
