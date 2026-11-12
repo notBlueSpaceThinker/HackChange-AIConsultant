@@ -1,62 +1,35 @@
 import json
 
-from src.schemas.domain.state import ClientProfile, Message, Product
+from src.schemas.domain.state import ClientProfile, Product
 
-EXTRACTED_FIELDS = ("problem_summary", "target_product", "phone")
+CLIENT_PROFILE_SCHEMA = json.dumps(ClientProfile.model_json_schema())
 
-
-def _build_schema() -> str:
-    schema = ClientProfile.model_json_schema()
-    schema["properties"] = {
-        name: spec for name, spec in schema["properties"].items() if name in EXTRACTED_FIELDS
-    }
-    schema["required"] = []
-    return json.dumps(schema, ensure_ascii=False, indent=2)
+PRODUCT_VALUES = ", ".join([f"'{p.value}'" for p in Product])
 
 
-_PROFILE_SCHEMA = _build_schema()
-_PRODUCTS = " / ".join(p.value for p in Product)
-
-
-class ClientExtractorPrompt:
-    system: str = (
-        """Ты - модель для извлечения данных клиента из истории диалога.
-        Тебе нужно понять проблему клиента и подобрать продукт.
-        Правила:
-        1. Возвращай данные клиента в формате JSON без лишнего текста вокруг.
-        2. Если клиент не упомянул часть информации, не придумывай её.
-        В соответствующем поле ставь значение null.
-        3. Каждый раз собирай информацию из всех реплик диалога, сохраняя уже известные данные.
-        Информацию бери из реплик клиента.
-        4. Определяй target_product и формулируй проблему клиента (problem_summary).
-        Target_product выбирай из списка:
-        1. ОРЭМ - оптовый рынок электрической энергии и мощности.
-        2. АСКУЭ - автоматизированный учёт электроэнергии.
-        3. СЭС - солнечные электростанции
-        4. Потери - учёт потерь
-        5. Распознавание фото счётчиков
-        Если проблема пока не ясна, значение null.
-        Phone заполняй, если пользователь его сам написал.
-        "Схема JSON\n"
+class SummaryPrompt:
+    system: str = """
+        Ты - ассистент компании Energytool.
+        К тебе обращается пользователь.
+        Составь структурированное резюме проблемы пользователя.
+        Учитывай прошлое сообщение.
+        Сохраняй ранее известные факты.
+        Не переписывай резюме заново.
+        Дополняй резюме новыми деталями из последних сообщений.
+        Выдай ответ в формате:
+        1. Проблема клиента в формате 1-2 предложений.
+        2. Параметры объекта (мощность, регион, счётчики).
+        3. Рекомендованное решение от компании.
     """
-        f"{_PROFILE_SCHEMA}"
-    )
 
     @staticmethod
     def format_user_prompt(
-        history: list[Message],
-        known_profile: ClientProfile | None = None,
+        transcript: str, profile_json: str, previous_summary: str | None = None
     ) -> str:
-        dialog = "\n".join(
-            f"{'Клиент' if m.role == 'user' else 'Ассистент'}: {m.content}" for m in history
-        )
-        known = (
-            known_profile.model_dump_json(indent=2, include=set(EXTRACTED_FIELDS))
-            if known_profile
-            else "null"
-        )
-        return (
-            f"Уже известные данные\n{known}\n\n"
-            f"История диалога\n{dialog}\n\n"
-            "Верни обновлённые данные в формате JSON по схеме."
-        )
+        parts = []
+        if previous_summary:
+            parts.append(f"Прошлое резюме: {previous_summary}")
+        parts.append(f"Известные данные: {profile_json}")
+        parts.append(f"Новое сообщение: {transcript}")
+        parts.append("Обновленное резюме:")
+        return "\n\n".join(parts)
