@@ -4,35 +4,13 @@ from pathlib import Path, PurePosixPath
 from src.schemas.domain.chunk import KBDocument
 
 
-def _extract_title(content: str, fallback: str) -> str:
-    """Извлекает заголовок первого уровня (# ...) из текста документа."""
-    for line in content.split("\n"):
-        cleaned = line.strip()
-        if cleaned.startswith("#"):
-            title = cleaned.lstrip("#").strip()
-            if title:
-                return title
-    return fallback
-
-
 def _build_document(relative_path_str: str, content: str) -> KBDocument:
     """Нормализует текст и собирает замороженную модель KBDocument."""
     normalized_content = content.replace("\r\n", "\n")
     clean_rel_path = relative_path_str.replace("\\", "/").strip("/")
-    parts = clean_rel_path.split("/")
-
-    category = parts[0] if len(parts) > 1 else ""
-    filename = parts[-1]
-    title = _extract_title(normalized_content, fallback=filename)
-
-    # Поле product_name заполняется только для продуктовых файлов (20-products/*)
-    product_name = title if category == "20-products" else None
-
     return KBDocument.from_file(
-        source_file=clean_rel_path,
-        title=title,
+        filepath=clean_rel_path,
         content=normalized_content,
-        product_name=product_name,
     )
 
 
