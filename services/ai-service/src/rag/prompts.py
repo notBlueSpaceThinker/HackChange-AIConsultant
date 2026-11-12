@@ -46,4 +46,3 @@ class ConsultantPrompt:
             query=query.strip(),
             lead_marker=cls.LEAD_MARKER,
         )
-
