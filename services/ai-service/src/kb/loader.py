@@ -44,6 +44,9 @@ def load_kb(source: Path) -> list[KBDocument]:
                 with archive.open(file_info, "r") as f:
                     content = f.read().decode("utf-8-sig")
 
+                for zip_path in sorted(source.rglob("*.zip")):
+                    documents.extend(load_kb(zip_path))
+
                 documents.append(_build_document(rel_path, content))
 
     elif source.is_dir():

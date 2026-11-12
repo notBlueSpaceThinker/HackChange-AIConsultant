@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 
@@ -9,6 +10,7 @@ PROJECT_DIR = SERVICE_DIR.parent.parent
 SRC_DIR = SERVICE_DIR / "src"
 TESTS_DIR = SERVICE_DIR / "tests"
 SCRIPTS_DIR = SERVICE_DIR / "scripts"
+DATA_DIR = os.getenv("DATA_DIR", default=PROJECT_DIR / "data")
 
 
 class BaseConfig(BaseSettings):
