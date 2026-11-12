@@ -1,53 +1,57 @@
-import time
-
 from src.core.llm import generate_response
-from src.rag.prompts import ConsultantPrompt, IrrelevantContext
+from src.rag.prompts import ConsultantPrompt
 from src.rag.retriever import retrieve
-from src.schemas.api.chat import ChatRequest
 from src.schemas.domain.chunk import Chunk, ScoredChunk
-from src.schemas.domain.state import (
-    ConfidenceStatus,
-    ConsultantReply,
-    DialogState,
-    Timings,
-)
+from src.schemas.domain.state import ConsultantReply, Message
+
+EMPTY_CONTEXT = "Релевантные фрагменты в базе знаний не найдены."
 
 
-def _format_document_chunk(document_chunk: Chunk | ScoredChunk) -> str:
-    if isinstance(document_chunk, ScoredChunk):
-        document_chunk = document_chunk.chunk
-    return document_chunk.as_context()
+def _format_chunk(item: Chunk | ScoredChunk) -> str:
+    chunk = item.chunk if isinstance(item, ScoredChunk) else item
+    section_path = chunk.metadata.section_path
+    body = chunk.content
+    if section_path and body.startswith(section_path):
+        body = body.removeprefix(section_path).lstrip("\n")
+    header = f"[{chunk.filepath}] {section_path}".strip()
+    return f"{header}\n{body}"
 
 
-def _format_context(context: list[Chunk | ScoredChunk]) -> str:
-    return "\n=======\n".join(_format_document_chunk(chunk) for chunk in context)
+def _format_context(chunks: list[Chunk] | list[ScoredChunk]) -> str:
+    return "\n=======\n".join(_format_chunk(chunk) for chunk in chunks)
 
 
-async def run_pipeline(request: ChatRequest) -> ConsultantReply:
+async def run_pipeline(
+    message: Message,
+    history: list[Message] | None = None,
+    summary: str | None = None,
+) -> ConsultantReply:
     """
-    Runs the RAG pipeline.
+    Run the RAG pipeline.
     """
-    query, history = request.to_llama_inputs()
-
-    t_ret = time.perf_counter()
+    query = message.content
     chunks = await retrieve(query)
-    retrieval_ms = int((time.perf_counter() - t_ret) * 1000)
 
-    context = _format_context(chunks) if chunks else IrrelevantContext.PROMPT
-    prompt = ConsultantPrompt.format_user_prompt(query=query, context=context)
+    context = _format_context(chunks) if chunks else EMPTY_CONTEXT
+    prompt = ConsultantPrompt.format_prompt(
+        query=query,
+        context=context,
+        summary=summary,
+    )
 
-    t_llm = time.perf_counter()
-    answer = await generate_response(
+    raw_answer = await generate_response(
         prompt=prompt,
         history=history,
         system_prompt=ConsultantPrompt.SYSTEM_PROMPT,
     )
-    llm_ms = int((time.perf_counter() - t_llm) * 1000)
 
-    status = ConfidenceStatus.answered if chunks else ConfidenceStatus.out_of_scope
+    ready_for_lead = ConsultantPrompt.LEAD_MARKER in raw_answer
+    answer = raw_answer.replace(ConsultantPrompt.LEAD_MARKER, "").strip()
+    if not answer:
+        answer = "Пожалуйста, заполните форму контактов, и наш специалист свяжется с вами."
+
     return ConsultantReply(
         answer=answer,
-        state=DialogState(confidence_status=status),
+        ready_for_lead=ready_for_lead,
         chunks=chunks,
-        timings=Timings(retrieval_ms=retrieval_ms, llm_ms=llm_ms),
     )
