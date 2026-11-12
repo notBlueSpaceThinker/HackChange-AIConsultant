@@ -9,8 +9,7 @@ from src.core.qdrant import (
     get_async_qdrant_client,
 )
 from src.core.reranker import rerank_documents
-from src.schemas.domain.chunk import DocumentChunk, SectionType
-from src.schemas.domain.search import ScoredChunk
+from src.schemas.domain.chunk import Chunk, ScoredChunk, SectionType
 
 DEFAULT_EXPAND_TYPES: set[SectionType] = {
     SectionType.RESTRICTION,
@@ -18,7 +17,7 @@ DEFAULT_EXPAND_TYPES: set[SectionType] = {
 }
 
 
-async def rerank_chunks(query: str, chunks: list[ScoredChunk]) -> list[ScoredChunk]:
+async def _rerank_chunks(query: str, chunks: list[ScoredChunk]) -> list[ScoredChunk]:
     if not chunks:
         return []
     texts = [item.chunk.content for item in chunks]
@@ -30,12 +29,12 @@ async def rerank_chunks(query: str, chunks: list[ScoredChunk]) -> list[ScoredChu
     reranked = []
     for idx, score in rerank_scores:
         chunk = chunks[idx]
-        chunk.rerank_score = score
+        chunk.score = score
         reranked.append(chunk)
     return reranked
 
 
-async def expand_chunks(
+async def _expand_chunks(
     chunks: list[ScoredChunk],
     expand_types: set[SectionType] = DEFAULT_EXPAND_TYPES,
     limit_per_doc: int = settings.rag.expand_limit_per_doc,
@@ -77,8 +76,8 @@ async def expand_chunks(
             expanded_ids.add(str(point.id))
             expanded_chunks.append(
                 ScoredChunk(
-                    chunk=DocumentChunk.from_payload(point.payload or {}),
-                    rrf_score=0.0,
+                    chunk=Chunk.from_payload(point.payload or {}),
+                    score=0.0,
                 )
             )
     return expanded_chunks
@@ -89,6 +88,7 @@ async def retrieve(
     query: str,
     top_k: int = settings.rag.top_k,
     with_rerank: bool = True,
+    reranker_threshold: float = settings.rag.reranker_threshold,
     with_expansion: bool = True,
 ) -> list[ScoredChunk]:
     client = get_async_qdrant_client()
@@ -112,8 +112,8 @@ async def retrieve(
 
     chunks: list[ScoredChunk] = [
         ScoredChunk(
-            chunk=DocumentChunk.from_payload(point.payload),
-            rrf_score=point.score,
+            chunk=Chunk.from_payload(point.payload or {}),
+            score=point.score,
         )
         for point in search_result.points
     ]
@@ -121,9 +121,9 @@ async def retrieve(
         return []
 
     if with_rerank:
-        chunks = await rerank_chunks(query, chunks)
+        chunks = await _rerank_chunks(query, chunks)
 
     if with_expansion:
-        expanded_chunks = await expand_chunks(chunks)
+        expanded_chunks = await _expand_chunks(chunks)
         chunks.extend(expanded_chunks)
     return chunks

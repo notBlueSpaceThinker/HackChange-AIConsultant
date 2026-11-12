@@ -1,6 +1,6 @@
 {
     "version": "1",
-    "default_section_type": "overview",
+    "default_section_type": "other",
     "rules": [
         {
             "section_type": "restriction",

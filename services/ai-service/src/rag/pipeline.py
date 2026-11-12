@@ -4,8 +4,7 @@ from src.core.llm import generate_response
 from src.rag.prompts import ConsultantPrompt, IrrelevantContext
 from src.rag.retriever import retrieve
 from src.schemas.api.chat import ChatRequest
-from src.schemas.domain.chunk import DocumentChunk
-from src.schemas.domain.search import ScoredChunk
+from src.schemas.domain.chunk import Chunk, ScoredChunk
 from src.schemas.domain.state import (
     ConfidenceStatus,
     ConsultantReply,
@@ -14,13 +13,13 @@ from src.schemas.domain.state import (
 )
 
 
-def _format_document_chunk(document_chunk: DocumentChunk | ScoredChunk) -> str:
+def _format_document_chunk(document_chunk: Chunk | ScoredChunk) -> str:
     if isinstance(document_chunk, ScoredChunk):
         document_chunk = document_chunk.chunk
     return document_chunk.as_context()
 
 
-def _format_context(context: list[DocumentChunk | ScoredChunk]) -> str:
+def _format_context(context: list[Chunk | ScoredChunk]) -> str:
     return "\n=======\n".join(_format_document_chunk(chunk) for chunk in context)
 
 

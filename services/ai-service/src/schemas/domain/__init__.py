@@ -1,26 +1,22 @@
-from src.schemas.domain.chunk import DocumentChunk, KBDocument, make_chunk_id, make_doc_id
-from src.schemas.domain.search import ScoredChunk
-from src.schemas.domain.state import (
-    ClientProfile,
-    ConfidenceStatus,
-    ConsultantReply,
-    DialogState,
-    Message,
-    Product,
-    Timings,
+from src.schemas.domain.chunk import (
+    Chunk,
+    ChunkMetadata,
+    KBDocument,
+    ScoredChunk,
+    SectionType,
+    make_chunk_id,
+    make_doc_id,
 )
+from src.schemas.domain.state import ConsultantReply, Message
 
 __all__ = [
-    "ClientProfile",
-    "ConfidenceStatus",
+    "Chunk",
+    "ChunkMetadata",
     "ConsultantReply",
-    "DialogState",
-    "DocumentChunk",
     "KBDocument",
     "Message",
-    "Product",
     "ScoredChunk",
-    "Timings",
+    "SectionType",
     "make_chunk_id",
     "make_doc_id",
 ]

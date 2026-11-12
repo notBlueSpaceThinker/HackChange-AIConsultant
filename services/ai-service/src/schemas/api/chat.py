@@ -1,69 +1,39 @@
 from typing import Literal
 
-from llama_index.core.llms import ChatMessage, MessageRole
 from pydantic import BaseModel, Field
 
-from src.schemas.domain import ConfidenceStatus, ConsultantReply, Message, ScoredChunk, Timings
-
-AUTHOR_TO_ROLE = {"user": "user", "LLM": "assistant"}
-
-
-def _format_text_with_files(text: str, files: dict[str, str]) -> str:
-    clean_text = text.strip()
-    if not files:
-        return clean_text
-    files_block = "\n".join(f"- {name}: {content}" for name, content in files.items())
-    return f"{clean_text}\n\n[Расшифровка приложенных файлов:\n{files_block}]"
+from src.schemas.domain import ConsultantReply, Message, ScoredChunk
 
 
 class MessageHistoryItem(BaseModel):
-    author: Literal["LLM", "user"] = Field(
-        description="Автор сообщения: user (клиент) или LLM (бот)"
-    )
-    message: str = Field(min_length=1, max_length=8000, description="Текст сообщения")
-    files_transcript: dict[str, str] = Field(
-        default_factory=dict,
-        description="Расшифровки файлов: имя файла -> текст (например, {'123.png': '...'})",
-    )
+    author: Literal["assistant", "user"]
+    message: str = Field(min_length=1)
+    files_transcript: dict[str, str] = Field(default_factory=dict)  # NO NEED FOR NOW DO NOT DELETE
 
     def to_domain(self) -> Message:
-        return Message(
-            role=AUTHOR_TO_ROLE[self.author], content=self.message, files=self.files_transcript
-        )
-
-    def to_llama_message(self) -> ChatMessage:
-        return ChatMessage(
-            role=MessageRole.USER if self.author == "user" else MessageRole.ASSISTANT,
-            content=_format_text_with_files(self.message, self.files_transcript),
-        )
+        return Message(role=self.author, content=self.message)
 
 
 class ChatRequest(BaseModel):
-    msg: str = Field(min_length=1, max_length=8000, description="Текущее сообщение клиента")
+    session_id: str
+    msg: str = Field(min_length=1, description="Current message from the client")
     history: list[MessageHistoryItem] = Field(
-        default_factory=list,
-        description="Предыдущие сообщения диалога",
+        default_factory=list, description="Previous messages in the conversation"
     )
-    files_transcript: dict[str, str] = Field(
-        default_factory=dict,
-        description="Расшифровки файлов: имя файла -> текст (например, {'123.png': '...'})",
-    )
+    summary: str | None = None
+    files_transcript: dict[str, str] = Field(default_factory=dict)  # NOT NEED FOR NOW DO NOT DELETE
 
-    def to_messages(self) -> list[Message]:
-        current = Message(role="user", content=self.msg, files=self.files_transcript)
-        return [item.to_domain() for item in self.history] + [current]
-
-    def to_llama_inputs(self) -> tuple[str, list[ChatMessage]]:
-        query = _format_text_with_files(self.msg, self.files_transcript)
-        history = [item.to_llama_message() for item in self.history]
-        return query, history
+    def to_domain(self) -> tuple[Message, list[Message]]:
+        return (
+            Message(role="user", content=self.msg),
+            [message.to_domain() for message in self.history],
+        )
 
 
 class SourceRef(BaseModel):
     doc_id: str
-    source_file: str
-    title: str
-    section_path: str
+    chunk_id: str
+    filepath: str
     score: float
     text: str
 
@@ -72,39 +42,24 @@ class SourceRef(BaseModel):
         chunk = item.chunk
         return cls(
             doc_id=str(chunk.doc_id),
-            source_file=chunk.source_file,
-            title=chunk.title,
-            section_path=chunk.section_path,
+            chunk_id=str(chunk.chunk_id),
+            filepath=chunk.filepath,
             score=item.score,
             text=chunk.content,
         )
 
 
 class ChatResponse(BaseModel):
-    response: str = Field(description="Ответ консультанта")
-    status: ConfidenceStatus = Field(
-        default=ConfidenceStatus.answered,
-        description="answered - ответ найден, "
-        "need_clarification - уточнить, out_of_scope - не по теме",
-    )
-    ready_for_lead: bool = Field(
-        default=False,
-        description="true - клиент готов оставить заявку, нужно показать форму контактов",
-    )
-    sources: list[SourceRef] = Field(
-        default_factory=list,
-        description="Документы базы знаний, использованные в ответе (для режима отладки)",
-    )
-    timings: Timings = Field(
-        default_factory=Timings, description="Время этапов в миллисекундах (для режима отладки)"
-    )
+    session_id: str
+    response: str = Field(description="LLM Responce")
+    ready_for_lead: bool = Field(default=False)
+    sources: list[SourceRef] = Field(default_factory=list, description="Sources used in the answer")
 
     @classmethod
-    def from_reply(cls, reply: ConsultantReply) -> "ChatResponse":
+    def from_reply(cls, reply: ConsultantReply, session_id: str) -> "ChatResponse":
         return cls(
+            session_id=session_id,
             response=reply.answer,
-            status=reply.state.confidence_status,
-            ready_for_lead=reply.state.is_ready_for_lead,
+            ready_for_lead=reply.ready_for_lead,
             sources=[SourceRef.from_scored(item) for item in reply.chunks],
-            timings=reply.timings,
         )
