@@ -21,15 +21,27 @@ class KBDocument(BaseModel):
     doc_id: UUID
     filepath: str
     filename: str
+    title: str
     content: str = Field(min_length=1)
 
+    @staticmethod
+    def _extract_title(content: str, fallback: str) -> str:
+        for line in content.split("\n"):
+            cleaned = line.strip()
+            if cleaned.startswith("#"):
+                title = cleaned.lstrip("#").strip()
+                if title:
+                    return title
+        return fallback
+
     @classmethod
-    def from_file(cls, filepath: str, content: str) -> "KBDocument":
+    def from_file(cls, filepath: str, content: str, title: str | None = None) -> "KBDocument":
         path = filepath.replace("\\", "/").strip("/")
         return cls(
             doc_id=make_doc_id(path),
             filepath=path,
             filename=path.rsplit("/", 1)[-1],
+            title=title or cls._extract_title(content, path.rsplit("/", 1)[-1]),
             content=content,
         )
 
