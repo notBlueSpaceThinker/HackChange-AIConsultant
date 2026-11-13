@@ -41,11 +41,18 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
 @router.post("/summarize")
 async def summarize(request: SummarizerRequest) -> SummarizerResponse:
-    summary = await run_summarizer_pipeline(
-        user_message=request.user_message,
-        assistant_message=request.assistant_message,
-        summary=request.summary,
-    )
+    started = time.perf_counter()
+    try:
+        summary = await run_summarizer_pipeline(
+            user_message=request.user_message,
+            assistant_message=request.assistant_message,
+            summary=request.summary,
+        )
+    except Exception:
+        log.exception("summarizer pipeline упал session_id=%s", request.session_id)
+        summary = request.summary or ""
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
+    log.info("summarize completed session_id=%s elapsed_ms=%d", request.session_id, elapsed_ms)
     return SummarizerResponse(
         session_id=request.session_id,
         summary=summary,
