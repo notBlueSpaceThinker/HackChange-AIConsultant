@@ -15,7 +15,7 @@ class ConsultantPrompt:
    - В конце КАЖДОГО ответа обязательно задавай ОДИН логичный уточняющий вопрос (например: регион объекта, характер потребления, текущие приборы учёта) ЛИБО, если ситуация ясна, предложи передать заявку менеджеру для детального расчёта.
 """
 
-    user_template = """Фрагменты базы знаний МТС Energytool:
+    propmt_template = """Фрагменты базы знаний МТС Energytool:
 ---------------------
 {context}
 ---------------------
@@ -30,7 +30,7 @@ class ConsultantPrompt:
         context: str,
         question: str,
     ) -> str:
-        return cls.user_template.format(
+        return cls.prompt_template.format(
             context=context.strip(),
             question=question.strip(),
         )
