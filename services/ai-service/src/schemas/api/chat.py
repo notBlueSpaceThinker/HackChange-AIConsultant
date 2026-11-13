@@ -9,20 +9,20 @@ from src.schemas.domain.state import ConsultantReply, Message
 class MessageHistoryItem(BaseModel):
     author: Literal["assistant", "user"]
     message: str = Field(min_length=1)
-    files_transcript: dict[str, str] = Field(default_factory=dict)
+    files_transcript: dict[str, str] = Field(default_factory=dict)  # NO NEED FOR NOW DO NOT DELETE
 
     def to_domain(self) -> Message:
         return Message(role=self.author, content=self.message)
 
 
 class ChatRequest(BaseModel):
-    session_id: str = Field(description="Номер диалога")
-    msg: str = Field(min_length=1, description="Текущее сообщение клиента")
+    session_id: str
+    msg: str = Field(min_length=1, description="Current message from the client")
     history: list[MessageHistoryItem] = Field(
-        default_factory=list, description="Предыдущие сообщения диалога"
+        default_factory=list, description="Previous messages in the conversation"
     )
-    summary: str | None = Field(default=None, description="Сводка диалога для менеджера")
-    files_transcript: dict[str, str] = Field(default_factory=dict)
+    summary: str | None = None
+    files_transcript: dict[str, str] = Field(default_factory=dict)  # NOT NEED FOR NOW DO NOT DELETE
 
     def to_domain(self) -> tuple[Message, list[Message]]:
         return (
@@ -51,27 +51,28 @@ class SourceRef(BaseModel):
 
 
 class ChatResponse(BaseModel):
-    session_id: str = Field(description="Номер диалога")
-    response: str = Field(description="Ответ ассистента")
-    ready_for_lead: bool = Field(default=False, description="Бот готов собрать заявку")
-    summary: str | None = Field(
-        default=None, description="Обновлённая сводка диалога для менеджера"
-    )
-    sources: list[SourceRef] = Field(
-        default_factory=list, description="Источники, использованные в ответе"
-    )
+    session_id: str
+    response: str = Field(description="LLM Responce")
+    ready_for_lead: bool = Field(default=False)
+    sources: list[SourceRef] = Field(default_factory=list, description="Sources used in the answer")
 
     @classmethod
-    def from_reply(
-        cls,
-        reply: ConsultantReply,
-        session_id: str,
-        summary: str | None = None,
-    ) -> "ChatResponse":
+    def from_reply(cls, reply: ConsultantReply, session_id: str) -> "ChatResponse":
         return cls(
             session_id=session_id,
             response=reply.answer,
             ready_for_lead=reply.ready_for_lead,
-            summary=summary,
             sources=[SourceRef.from_scored(item) for item in reply.chunks],
         )
+
+
+class SummarizerRequest(BaseModel):
+    session_id: str
+    user_message: str
+    assistant_message: str
+    summary: str | None = None
+
+
+class SummarizerResponse(BaseModel):
+    session_id: str
+    summary: str
