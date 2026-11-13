@@ -3,9 +3,10 @@ import time
 
 from fastapi import APIRouter
 
-from src.rag.pipeline import run_pipeline
-from src.schemas.api.chat import ChatRequest, ChatResponse
+from src.rag.pipeline import run_rag_pipeline
+from src.schemas.api.chat import ChatRequest, ChatResponse, SummarizerRequest, SummarizerResponse
 from src.schemas.domain.state import ConsultantReply
+from src.summarization.pipeline import run_summarizer_pipeline
 
 router = APIRouter(tags=["chat"])
 log = logging.getLogger(__name__)
@@ -21,7 +22,7 @@ async def chat(request: ChatRequest) -> ChatResponse:
     started = time.perf_counter()
     try:
         message, history = request.to_domain()
-        reply = await run_pipeline(message, history, request.summary)
+        reply = await run_rag_pipeline(message, history, request.summary)
     except Exception:
         log.exception("pipeline упал")  # :(
         reply = ConsultantReply(
@@ -36,3 +37,16 @@ async def chat(request: ChatRequest) -> ChatResponse:
         elapsed_ms,
     )
     return ChatResponse.from_reply(reply, session_id=request.session_id)
+
+
+@router.post("/summarize")
+async def summarize(request: SummarizerRequest) -> SummarizerResponse:
+    summary = await run_summarizer_pipeline(
+        user_message=request.user_message,
+        assistant_message=request.assistant_message,
+        summary=request.summary,
+    )
+    return SummarizerResponse(
+        session_id=request.session_id,
+        summary=summary,
+    )

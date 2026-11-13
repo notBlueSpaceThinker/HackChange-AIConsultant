@@ -64,3 +64,15 @@ class ChatResponse(BaseModel):
             ready_for_lead=reply.ready_for_lead,
             sources=[SourceRef.from_scored(item) for item in reply.chunks],
         )
+
+
+class SummarizerRequest(BaseModel):
+    session_id: str
+    user_message: str
+    assistant_message: str
+    summary: str | None = None
+
+
+class SummarizerResponse(BaseModel):
+    session_id: str
+    summary: str
