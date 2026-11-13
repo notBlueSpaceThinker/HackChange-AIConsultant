@@ -206,4 +206,9 @@ checkpoints/
 *.bin
 *.safetensors
 *.onnx
-
+knowledge-base/
+knowledge-base.zip
+parsed_kb.json
+*.csv
+!**/example*.csv
+!**/sample*.csv
