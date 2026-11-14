@@ -1,0 +1,242 @@
+openapi: 3.1.0
+info:
+  title: Energytool AI service
+  version: 0.1.0
+paths:
+  /completions:
+    post:
+      tags:
+      - chat
+      summary: Chat
+      operationId: chat_completions_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /summarize:
+    post:
+      tags:
+      - chat
+      summary: Summarize
+      operationId: summarize_summarize_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SummarizerRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummarizerResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /health:
+    get:
+      summary: Health
+      operationId: health_health_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Health Health Get
+components:
+  schemas:
+    ChatRequest:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        msg:
+          type: string
+          minLength: 1
+          title: Msg
+          description: Current message from the client
+        history:
+          items:
+            $ref: '#/components/schemas/MessageHistoryItem'
+          type: array
+          title: History
+          description: Previous messages in the conversation
+        summary:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Summary
+        files_transcript:
+          additionalProperties:
+            type: string
+          type: object
+          title: Files Transcript
+      type: object
+      required:
+      - session_id
+      - msg
+      title: ChatRequest
+    ChatResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        response:
+          type: string
+          title: Response
+          description: LLM Responce
+        ready_for_lead:
+          type: boolean
+          title: Ready For Lead
+          default: false
+        sources:
+          items:
+            $ref: '#/components/schemas/SourceRef'
+          type: array
+          title: Sources
+          description: Sources used in the answer
+      type: object
+      required:
+      - session_id
+      - response
+      title: ChatResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    MessageHistoryItem:
+      properties:
+        author:
+          type: string
+          enum:
+          - assistant
+          - user
+          title: Author
+        message:
+          type: string
+          minLength: 1
+          title: Message
+        files_transcript:
+          additionalProperties:
+            type: string
+          type: object
+          title: Files Transcript
+      type: object
+      required:
+      - author
+      - message
+      title: MessageHistoryItem
+    SourceRef:
+      properties:
+        doc_id:
+          type: string
+          title: Doc Id
+        chunk_id:
+          type: string
+          title: Chunk Id
+        filepath:
+          type: string
+          title: Filepath
+        score:
+          type: number
+          title: Score
+        text:
+          type: string
+          title: Text
+      type: object
+      required:
+      - doc_id
+      - chunk_id
+      - filepath
+      - score
+      - text
+      title: SourceRef
+    SummarizerRequest:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        user_message:
+          type: string
+          title: User Message
+        assistant_message:
+          type: string
+          title: Assistant Message
+        summary:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Summary
+      type: object
+      required:
+      - session_id
+      - user_message
+      - assistant_message
+      title: SummarizerRequest
+    SummarizerResponse:
+      properties:
+        session_id:
+          type: string
+          title: Session Id
+        summary:
+          type: string
+          title: Summary
+      type: object
+      required:
+      - session_id
+      - summary
+      title: SummarizerResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
