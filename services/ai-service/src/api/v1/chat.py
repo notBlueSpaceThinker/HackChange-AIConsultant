@@ -1,11 +1,10 @@
 import logging
-import time
 
 from fastapi import APIRouter
 
 from src.rag.pipeline import run_rag_pipeline
 from src.schemas.api.chat import ChatRequest, ChatResponse, SummarizerRequest, SummarizerResponse
-from src.schemas.domain.state import ConsultantReply
+from src.schemas.domain.state import ConsultantReply, SummarizerReply
 from src.summarization.pipeline import run_summarizer_pipeline
 
 router = APIRouter(tags=["chat"])
@@ -19,7 +18,6 @@ FALLBACK_ANSWER = (
 
 @router.post("/completions")
 async def chat(request: ChatRequest) -> ChatResponse:
-    started = time.perf_counter()
     try:
         message, history = request.to_domain()
         reply = await run_rag_pipeline(message, history, request.summary)
@@ -29,31 +27,29 @@ async def chat(request: ChatRequest) -> ChatResponse:
             answer=FALLBACK_ANSWER,
             ready_for_lead=True,
         )
-    elapsed_ms = int((time.perf_counter() - started) * 1000)
+
     log.info(
-        "chat completed session_id=%s ready_for_lead=%s elapsed_ms=%d",
+        "chat completed session_id=%s ready_for_lead=%s",
         request.session_id,
         reply.ready_for_lead,
-        elapsed_ms,
     )
     return ChatResponse.from_reply(reply, session_id=request.session_id)
 
 
 @router.post("/summarize")
 async def summarize(request: SummarizerRequest) -> SummarizerResponse:
-    started = time.perf_counter()
     try:
-        summary = await run_summarizer_pipeline(
+        reply = await run_summarizer_pipeline(
             user_message=request.user_message,
             assistant_message=request.assistant_message,
             summary=request.summary,
         )
     except Exception:
         log.exception("summarizer pipeline упал session_id=%s", request.session_id)
-        summary = request.summary or ""
-    elapsed_ms = int((time.perf_counter() - started) * 1000)
-    log.info("summarize completed session_id=%s elapsed_ms=%d", request.session_id, elapsed_ms)
+        reply = SummarizerReply(summary=request.summary or "")
+    log.info("summarize completed session_id=%s", request.session_id)
     return SummarizerResponse(
         session_id=request.session_id,
-        summary=summary,
+        summary=reply.summary,
+        profiler=reply.profiler,
     )
