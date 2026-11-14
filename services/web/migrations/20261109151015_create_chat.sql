@@ -1,7 +1,8 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS chat (
-    id SERIAL PRIMARY KEY,
+    id uuid PRIMARY KEY,
     session_id UUID NOT NULL,
+    summary TEXT,
     user_id UUID,
 );
 

@@ -10,7 +10,6 @@ import (
 
 type ChatService interface {
 	ProcessIncomingMessage(query string) (string, error)
-	CreateProfile(sessionID, fullName, phone, company string) error
 }
 
 type ChatHandler struct {

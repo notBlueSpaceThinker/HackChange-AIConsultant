@@ -14,6 +14,7 @@ import (
 	"web/internal/service"
 	"web/internal/db/postgres"
 	"github.com/gorilla/mux"
+	"web/internal/integrations"
 )
 
 func main() {
@@ -26,8 +27,12 @@ func main() {
 		log.Fatalf("Ошибка при инициализации пула соединений с базой данных: %v", err)
 	}
 
-	chatService := service.NewChatService()
+	rag := integrations.NewRag("http://localhost:8000", nil)
+	chatRepo := postgres.NewChatRepository(pool)
+	chatService := service.NewChatService(chatRepo, rag)
 	chatHandler := handler.NewChatHandler(chatService)
+
+	
 
 	r := mux.NewRouter()
 
