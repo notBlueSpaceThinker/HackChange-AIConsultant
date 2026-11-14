@@ -109,14 +109,14 @@
 <script>
 // true - ответы из заглушки, false - запросы на сервер Ильи
 const USE_MOCK = false;
-const API_URL = "http://localhost:8082";
+const API_URL = "http://localhost:8090";
 
 async function sendMessage(sessionId, text) {
   if (USE_MOCK) return mockChat(text);
   const res = await fetch(`${API_URL}/message`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query: text }),
+    body: JSON.stringify({ query: text, session_id: sessionId }),
   });
   if (!res.ok) {
     let reason = `Ошибка ${res.status}`;
@@ -124,14 +124,19 @@ async function sendMessage(sessionId, text) {
     throw new Error(reason);
   }
   const data = await res.json();
-  return { answer: data.message, action: "answer", sources: [], timings: {} };
+  return {
+    answer: data.message,
+    action: data.ready_for_lead ? "offer_contact" : "answer",
+    sources: data.sources || [],
+    timings: data.timings || {},
+  };
 }
 
 async function sendLead(sessionId, lead) {
   if (USE_MOCK) return new Promise(r => setTimeout(() => r({ ok: true }), 400));
-  const res = await fetch(`${API_URL}/sessions/${sessionId}/lead`, {
+  const res = await fetch(`${API_URL}/lead`, {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(lead),
+    body: JSON.stringify({ session_id: sessionId, ...lead }),
   });
   if (!res.ok) throw new Error(`Ошибка ${res.status}`);
   return res.json();
@@ -265,7 +270,7 @@ function addDebug(question, data) {
     const src = document.createElement("div");
     src.className = "src";
     const b = document.createElement("b");
-    b.textContent = `${s.doc} · ${Number(s.score).toFixed(2)}`;
+    b.textContent = `${s.filepath || s.doc} - ${Number(s.score).toFixed(2)}`;
     src.append(b, document.createTextNode(s.text));
     step.append(src);
   }
