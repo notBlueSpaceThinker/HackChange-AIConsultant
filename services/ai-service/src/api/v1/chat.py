@@ -7,7 +7,6 @@ from src.analytics.summarizer import summarize
 from src.rag.pipeline import run_pipeline
 from src.schemas.api.chat import ChatRequest, ChatResponse
 from src.schemas.domain.state import ConsultantReply
-from src.summarization.pipeline import run_summarizer_pipeline
 
 router = APIRouter(tags=["chat"])
 log = logging.getLogger(__name__)
