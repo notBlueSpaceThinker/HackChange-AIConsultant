@@ -21,7 +21,7 @@ def _format_context(chunks: list[Chunk] | list[ScoredChunk]) -> str:
     return "\n=======\n".join(_format_chunk(chunk) for chunk in chunks)
 
 
-async def run_pipeline(
+async def run_rag_pipeline(
     message: Message,
     history: list[Message] | None = None,
     summary: str | None = None,
