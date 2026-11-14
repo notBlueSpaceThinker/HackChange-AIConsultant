@@ -2,6 +2,7 @@ from src.core.llm import generate_response
 from src.rag.prompts import ConsultantPrompt
 from src.rag.retriever import retrieve
 from src.schemas.domain.chunk import Chunk, ScoredChunk
+from src.schemas.domain.profiler import RagProfiler
 from src.schemas.domain.state import ConsultantReply, Message
 
 EMPTY_CONTEXT = "Релевантные фрагменты в базе знаний не найдены."
@@ -29,29 +30,30 @@ async def run_rag_pipeline(
     """
     Run the RAG pipeline.
     """
-    query = message.content
-    chunks = await retrieve(query)
+    profiler = RagProfiler()
+    with profiler.measure("rag_time"):
+        query = message.content
+        chunks = await retrieve(query, profiler=profiler)
 
-    context = _format_context(chunks) if chunks else EMPTY_CONTEXT
-    prompt = ConsultantPrompt.format_prompt(
-        query=query,
-        context=context,
-        summary=summary,
-    )
+        context = _format_context(chunks) if chunks else EMPTY_CONTEXT
+        prompt = ConsultantPrompt.format_prompt(
+            query=query,
+            context=context,
+            summary=summary,
+        )
 
-    raw_answer = await generate_response(
-        prompt=prompt,
-        history=history,
-        system_prompt=ConsultantPrompt.SYSTEM_PROMPT,
-    )
+        with profiler.measure("generation_time"):
+            raw_answer = await generate_response(
+                prompt=prompt,
+                history=history,
+                system_prompt=ConsultantPrompt.SYSTEM_PROMPT,
+            )
 
-    ready_for_lead = ConsultantPrompt.LEAD_MARKER in raw_answer
-    answer = raw_answer.replace(ConsultantPrompt.LEAD_MARKER, "").strip()
-    if not answer:
-        answer = "Пожалуйста, заполните форму контактов, и наш специалист свяжется с вами."
+        ready_for_lead = ConsultantPrompt.LEAD_MARKER in raw_answer
+        answer = raw_answer.replace(ConsultantPrompt.LEAD_MARKER, "").strip()
+        if not answer:
+            answer = "Пожалуйста, заполните форму контактов, и наш специалист свяжется с вами."
 
     return ConsultantReply(
-        answer=answer,
-        ready_for_lead=ready_for_lead,
-        chunks=chunks,
+        answer=answer, ready_for_lead=ready_for_lead, chunks=chunks, profiler=profiler
     )
