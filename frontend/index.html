@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Energytool - ИИ-консультант</title>
+<style>
+  @font-face { font-family:"MTS Text"; src:url("fonts/MTSText-Regular.woff2") format("woff2"); font-weight:400; }
+  @font-face { font-family:"MTS Text"; src:url("fonts/MTSText-Medium.woff2") format("woff2"); font-weight:500; }
+  @font-face { font-family:"MTS Text"; src:url("fonts/MTSText-Bold.woff2") format("woff2"); font-weight:700; }
+  @font-face { font-family:"MTS Wide"; src:url("fonts/MTSWide-Bold.woff2") format("woff2"); font-weight:700; }
+  :root { --red:#FF0032; --bg:#F2F3F7; --card:#fff; --text:#1D2023; --muted:#6B7280; --line:#E5E7EB; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"MTS Text",system-ui,sans-serif; color:var(--text); background-color:#F4F1EE;
+    background-image:
+      radial-gradient(60% 50% at 100% 0%, rgba(255,0,50,.18), transparent 70%),
+      radial-gradient(50% 45% at 0% 100%, rgba(255,0,50,.10), transparent 70%),
+      linear-gradient(rgba(29,32,35,.045) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(29,32,35,.045) 1px, transparent 1px);
+    background-size:auto, auto, 32px 32px, 32px 32px; background-attachment:fixed; }
+  .app { max-width:1100px; margin:0 auto; height:100vh; display:flex; gap:16px; padding:16px; }
+  .chat { flex:1; display:flex; flex-direction:column; background:var(--card); border-radius:16px; overflow:hidden; box-shadow:0 10px 40px rgba(29,32,35,.10); }
+  header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--line); }
+  header h1 { font-family:"MTS Wide","MTS Text",sans-serif; font-size:17px; margin:0; display:flex; align-items:center; gap:12px; }
+  header h1 span { color:var(--red); }
+  .logo { height:36px; width:36px; border-radius:6px; }
+  .brand { display:flex; align-items:center; gap:10px; }
+  .ai-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 10px 5px 8px; border-radius:999px; background:#1D2023; color:#fff; font-size:13px; font-weight:700; letter-spacing:.02em; }
+  .ai-badge svg { width:16px; height:16px; }
+  .actions { display:flex; gap:8px; align-items:center; }
+  button { font:inherit; font-weight:500; cursor:pointer; border-radius:10px; border:1px solid var(--line); background:#fff; padding:8px 14px; }
+  button.primary { background:var(--red); border-color:var(--red); color:#fff; }
+  button:disabled { opacity:.5; cursor:default; }
+  label.toggle { font-size:14px; color:var(--muted); display:flex; gap:6px; align-items:center; cursor:pointer; }
+  #messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px; }
+  .msg { max-width:75%; padding:10px 14px; border-radius:14px; line-height:1.45; }
+  .msg.user { white-space:pre-wrap; background:var(--red); color:#fff; border-bottom-right-radius:4px; }
+  .msg.assistant { background:var(--bg); border-bottom-left-radius:4px; }
+  .msg p { margin:0 0 8px; } .msg p:last-child, .msg ul:last-child, .msg ol:last-child { margin-bottom:0; }
+  .msg ul, .msg ol { margin:0 0 8px; padding-left:20px; } .msg li { margin:2px 0; }
+  .msg code { background:rgba(29,32,35,.08); border-radius:4px; padding:1px 5px; font-size:.92em; }
+  .row { display:flex; gap:8px; align-items:flex-end; animation:pop .25s ease; }
+  .row.user { align-self:flex-end; max-width:75%; }
+  .row.assistant { align-self:flex-start; max-width:85%; }
+  .row .msg { max-width:none; }
+  .avatar { flex:none; width:28px; height:28px; border-radius:50%; background:#1D2023; display:flex; align-items:center; justify-content:center; }
+  .avatar svg { width:15px; height:15px; }
+  @keyframes pop { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .dots { display:inline-flex; gap:4px; padding:4px 2px; }
+  .dots i { width:7px; height:7px; border-radius:50%; background:var(--muted); animation:blink 1.2s infinite ease-in-out; }
+  .dots i:nth-child(2) { animation-delay:.2s; } .dots i:nth-child(3) { animation-delay:.4s; }
+  @keyframes blink { 0%,80%,100% { opacity:.25; transform:scale(.8); } 40% { opacity:1; transform:scale(1); } }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; align-self:flex-start; margin-left:36px; }
+  .chip { border-color:var(--red); color:var(--red); background:#fff; border-radius:999px; padding:8px 14px; font-size:14px; transition:background .15s,color .15s; }
+  .chip:hover { background:var(--red); color:#fff; }
+  .lead-ok { align-self:flex-start; display:flex; gap:12px; align-items:center; padding:12px 16px; border:1px solid var(--line); border-radius:14px; animation:pop .25s ease; }
+  .lead-ok svg { width:40px; height:40px; flex:none; fill:none; stroke:var(--red); stroke-linecap:round; stroke-linejoin:round; }
+  .lead-ok circle { stroke-width:3; stroke-dasharray:151; stroke-dashoffset:151; animation:draw .6s forwards; }
+  .lead-ok path { stroke-width:4; stroke-dasharray:40; stroke-dashoffset:40; animation:draw .4s .45s forwards; }
+  .lead-ok p { margin:0; }
+  @keyframes draw { to { stroke-dashoffset:0; } }
+  .msg .meta { font-size:12px; color:var(--muted); margin-top:6px; }
+  .lead { align-self:flex-start; width:min(420px,100%); border:1px solid var(--line); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:8px; }
+  .lead h3 { margin:0 0 4px; font-size:15px; }
+  input, textarea { font:inherit; padding:10px 12px; border:1px solid var(--line); border-radius:10px; width:100%; }
+  .error { color:var(--red); font-size:13px; min-height:16px; }
+  form.send { display:flex; gap:8px; padding:14px 20px; border-top:1px solid var(--line); }
+  form.send textarea { resize:none; height:44px; }
+  .debug { width:340px; background:var(--card); border-radius:16px; padding:16px; overflow-y:auto; display:none; }
+  .debug.on { display:block; }
+  .debug h2 { font-size:16px; margin:0 0 12px; }
+  .debug .step { border-top:1px solid var(--line); padding:10px 0; font-size:13px; }
+  .debug .times { display:grid; grid-template-columns:1fr auto; gap:2px 12px; margin:6px 0; }
+  .debug .src { background:var(--bg); border-radius:8px; padding:8px; margin-top:6px; }
+  .debug .src b { display:block; }
+  .tag { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:#FDECEC; color:#9B0A10; }
+  .empty { color:var(--muted); font-size:14px; }
+  @media (max-width:800px){ .app{flex-direction:column;height:auto;min-height:100vh} .debug{width:auto} .msg{max-width:90%} }
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="chat">
+    <header>
+      <h1>
+        <img src="logo.svg" alt="МТС" class="logo">
+        <div class="brand">
+          <div><span>Energytool</span> консультант</div>
+          <span class="ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H10l-4 4v-4H4z"/><path d="M12 8.2l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="#FF0032" stroke="#FF0032" stroke-width="1"/></svg>ИИ-чат</span>
+        </div>
+      </h1>
+      <div class="actions">
+        <label class="toggle"><input type="checkbox" id="debugToggle"> Отладка</label>
+        <button id="newDialog">Новый диалог</button>
+      </div>
+    </header>
+    <div id="messages"></div>
+    <form class="send" id="sendForm">
+      <textarea id="input" placeholder="Опишите вашу задачу…" required></textarea>
+      <button class="primary" id="sendBtn">Отправить</button>
+    </form>
+  </main>
+  <aside class="debug" id="debug">
+    <h2>Режим отладки</h2>
+    <div id="debugList"><p class="empty">Здесь появятся время ответа и документы базы знаний.</p></div>
+  </aside>
+</div>
+
+<script>
+// true - ответы из заглушки, false - запросы на сервер Ильи
+const USE_MOCK = false;
+const API_URL = "http://localhost:8090";
+
+async function sendMessage(sessionId, text) {
+  if (USE_MOCK) return mockChat(text);
+  const res = await fetch(`${API_URL}/message`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query: text, session_id: sessionId }),
+  });
+  if (!res.ok) {
+    let reason = `Ошибка ${res.status}`;
+    try { reason = (await res.json()).error || reason; } catch (e) {}
+    throw new Error(reason);
+  }
+  const data = await res.json();
+  return {
+    answer: data.message,
+    action: data.ready_for_lead ? "offer_contact" : "answer",
+    sources: data.sources || [],
+    timings: data.timings || {},
+  };
+}
+
+async function sendLead(sessionId, lead) {
+  if (USE_MOCK) return new Promise(r => setTimeout(() => r({ ok: true }), 400));
+  const res = await fetch(`${API_URL}/lead`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId, ...lead }),
+  });
+  if (!res.ok) throw new Error(`Ошибка ${res.status}`);
+  return res.json();
+}
+
+let mockTurn = 0;
+function mockChat(text) {
+  mockTurn++;
+  const offer = mockTurn >= 2;
+  return new Promise(r => setTimeout(() => r({
+    answer: offer
+      ? "Чтобы подготовить предварительную оценку, могу передать заявку менеджеру. Оставите контакты?"
+      : "Да, станцию можно вводить **поэтапно**:\n- начать с 60 кВт\n- затем нарастить мощность\n\nУ вас есть данные о дневном потреблении объекта?",
+    action: offer ? "offer_contact" : "clarify",
+    sources: [
+      { doc: "solar.md", chunk_id: "12", score: 0.91, text: "Станцию можно вводить поэтапно…" },
+      { doc: "solar.md", chunk_id: "14", score: 0.74, text: "Перед проектированием нужны данные о потреблении…" },
+    ],
+    timings: { retrieval_ms: 120, rerank_ms: 80, llm_ms: 1400, total_ms: 1600 },
+  }), 700));
+}
+
+const $ = id => document.getElementById(id);
+let sessionId, busy = false;
+
+const AVATAR = '<div class="avatar"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H10l-4 4v-4H4z"/><path d="M12 8.2l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="#FF0032" stroke="#FF0032" stroke-width="1"/></svg></div>';
+
+const STARTERS = [
+  "Как снизить счета за электроэнергию?",
+  "Нужен автоматизированный учёт электроэнергии",
+  "Хочу построить солнечную станцию",
+  "Как найти потери электроэнергии?",
+];
+
+function md(text) {
+  const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = t => esc(t).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`(.+?)`/g, "<code>$1</code>");
+  const out = [];
+  let list = null;
+  const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  for (const line of text.split("\n")) {
+    const ul = line.match(/^\s*[-*]\s+(.*)/);
+    const ol = line.match(/^\s*\d+[.)]\s+(.*)/);
+    if (ul || ol) {
+      const tag = ul ? "ul" : "ol";
+      if (list !== tag) { close(); out.push(`<${tag}>`); list = tag; }
+      out.push(`<li>${inline((ul || ol)[1])}</li>`);
+    } else {
+      close();
+      if (line.trim()) out.push(`<p>${inline(line)}</p>`);
+    }
+  }
+  close();
+  return out.join("");
+}
+
+function addChips() {
+  const box = document.createElement("div");
+  box.className = "chips";
+  box.id = "chips";
+  for (const q of STARTERS) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.textContent = q;
+    b.addEventListener("click", () => { $("input").value = q; $("sendForm").requestSubmit(); });
+    box.append(b);
+  }
+  $("messages").append(box);
+}
+
+function addTyping() {
+  const row = document.createElement("div");
+  row.className = "row assistant";
+  row.insertAdjacentHTML("beforeend", AVATAR);
+  const el = document.createElement("div");
+  el.className = "msg assistant";
+  el.innerHTML = '<span class="dots"><i></i><i></i><i></i></span>';
+  row.append(el);
+  $("messages").append(row);
+  $("messages").scrollTop = $("messages").scrollHeight;
+  return row;
+}
+
+function leadDone() {
+  const d = document.createElement("div");
+  d.className = "lead-ok";
+  d.innerHTML = '<svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24"/><path d="M15 27l8 8 14-16"/></svg><p>Спасибо! Заявка передана менеджеру, он свяжется с вами.</p>';
+  return d;
+}
+
+function newSession() {
+  sessionId = crypto.randomUUID();
+  mockTurn = 0;
+  $("messages").innerHTML = "";
+  $("debugList").innerHTML = '<p class="empty">Здесь появятся время ответа и документы базы знаний.</p>';
+  addMessage("assistant", "Здравствуйте! Я консультант Energytool. Расскажите, какую задачу хотите решить: снизить счета, наладить учёт, найти потери?");
+  addChips();
+}
+
+function addMessage(role, text, meta) {
+  const row = document.createElement("div");
+  row.className = `row ${role}`;
+  if (role === "assistant") row.insertAdjacentHTML("beforeend", AVATAR);
+  const el = document.createElement("div");
+  el.className = `msg ${role}`;
+  if (role === "assistant") el.innerHTML = md(text); else el.textContent = text;
+  if (meta) { const m = document.createElement("div"); m.className = "meta"; m.textContent = meta; el.append(m); }
+  row.append(el);
+  $("messages").append(row);
+  $("messages").scrollTop = $("messages").scrollHeight;
+  return row;
+}
+
+function addDebug(question, data) {
+  const list = $("debugList");
+  if (list.querySelector(".empty")) list.innerHTML = "";
+  const t = data.timings || {};
+  const step = document.createElement("div");
+  step.className = "step";
+  step.innerHTML = `<span class="tag"></span><p></p>
+    <div class="times">
+      <span>Поиск</span><span>${t.retrieval_ms ?? "-"} мс</span>
+      <span>Реранкер</span><span>${t.rerank_ms ?? "-"} мс</span>
+      <span>Модель</span><span>${t.llm_ms ?? "-"} мс</span>
+      <b>Всего</b><b>${t.total_ms ?? "-"} мс</b>
+    </div>`;
+  step.querySelector(".tag").textContent = data.action || "answer";
+  step.querySelector("p").textContent = "Вопрос: " + question;
+  for (const s of data.sources || []) {
+    const src = document.createElement("div");
+    src.className = "src";
+    const b = document.createElement("b");
+    b.textContent = `${s.filepath || s.doc} - ${Number(s.score).toFixed(2)}`;
+    src.append(b, document.createTextNode(s.text));
+    step.append(src);
+  }
+  list.prepend(step);
+}
+
+function addLeadForm() {
+  const form = document.createElement("form");
+  form.className = "lead";
+  form.innerHTML = `<h3>Заявка менеджеру</h3>
+    <input name="full_name" placeholder="ФИО">
+    <input name="phone" placeholder="Телефон, например +7 900 123-45-67">
+    <input name="company" placeholder="Компания">
+    <div class="error"></div>
+    <button class="primary">Отправить заявку</button>`;
+  const err = form.querySelector(".error");
+  form.addEventListener("input", () => err.textContent = "");
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const lead = Object.fromEntries(new FormData(form));
+    for (const k in lead) lead[k] = lead[k].trim();
+    if (!lead.full_name || !lead.phone || !lead.company) return err.textContent = "Заполните все три поля";
+    if (lead.phone.replace(/\D/g, "").length !== 11) return err.textContent = "Проверьте номер телефона";
+    const btn = form.querySelector("button");
+    btn.disabled = true;
+    try {
+      await sendLead(sessionId, lead);
+      form.replaceWith(leadDone());
+    } catch (ex) { err.textContent = "Не удалось отправить, попробуйте ещё раз"; btn.disabled = false; }
+  });
+  $("messages").append(form);
+  $("messages").scrollTop = $("messages").scrollHeight;
+}
+
+$("sendForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const text = $("input").value.trim();
+  if (!text || busy) return;
+  busy = true; $("sendBtn").disabled = true; $("input").value = "";
+  $("chips")?.remove();
+  addMessage("user", text);
+  const typing = addTyping();
+  try {
+    const data = await sendMessage(sessionId, text);
+    typing.remove();
+    const t = data.timings?.total_ms;
+    addMessage("assistant", data.answer, $("debugToggle").checked && t ? `${(t / 1000).toFixed(1)} с` : "");
+    addDebug(text, data);
+    if (data.action === "offer_contact") addLeadForm();
+  } catch (ex) {
+    typing.remove();
+    addMessage("assistant", "Не получилось получить ответ. Попробуйте ещё раз.");
+  } finally { busy = false; $("sendBtn").disabled = false; $("input").focus(); }
+});
+
+$("input").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("sendForm").requestSubmit(); }
+});
+$("newDialog").addEventListener("click", newSession);
+$("debugToggle").addEventListener("change", e => $("debug").classList.toggle("on", e.target.checked));
+
+newSession();
+</script>
+</body>
+</html>
