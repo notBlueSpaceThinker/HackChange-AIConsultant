@@ -14,6 +14,8 @@ from src.core.qdrant import (
     create_collection_if_not_exists,
     get_async_qdrant_client,
 )
+from src.kb.cleaner import clean_documents
+from src.kb.linearizer import linearize_documents
 from src.kb.loader import load_kb
 from src.rag.chunker import chunk_document
 
@@ -22,7 +24,9 @@ BATCH_SIZE = 64
 
 async def ingest(data_dir: Path, recreate: bool) -> None:
     client = get_async_qdrant_client()
-    docs = load_kb(DATA_DIR)
+    docs = load_kb(data_dir)
+    docs = clean_documents(docs)
+    docs = linearize_documents(docs)
     chunks = [chunk for doc in docs for chunk in chunk_document(doc)]
 
     try:

@@ -192,6 +192,7 @@ data/
 datasets/
 !datasets/.gitkeep
 models/
+submission/
 !models/.gitkeep
 weights/
 !weights/.gitkeep
