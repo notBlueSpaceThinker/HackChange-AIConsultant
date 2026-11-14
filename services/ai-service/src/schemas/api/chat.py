@@ -3,6 +3,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from src.schemas.domain.chunk import ScoredChunk
+from src.schemas.domain.profiler import Profiler
 from src.schemas.domain.state import ConsultantReply, Message
 
 
@@ -55,14 +56,16 @@ class ChatResponse(BaseModel):
     response: str = Field(description="LLM Responce")
     ready_for_lead: bool = Field(default=False)
     sources: list[SourceRef] = Field(default_factory=list, description="Sources used in the answer")
+    profiler: Profiler | None = Field(default=None, description="Timings of pipeline stages, seconds")
 
     @classmethod
-    def from_reply(cls, reply: ConsultantReply, session_id: str) -> "ChatResponse":
+    def from_reply(cls, reply: ConsultantReply, session_id: str, profiler: Profiler | None = None) -> "ChatResponse":
         return cls(
             session_id=session_id,
             response=reply.answer,
             ready_for_lead=reply.ready_for_lead,
             sources=[SourceRef.from_scored(item) for item in reply.chunks],
+            profiler=profiler
         )
 
 
@@ -76,3 +79,4 @@ class SummarizerRequest(BaseModel):
 class SummarizerResponse(BaseModel):
     session_id: str
     summary: str
+    profiler: Profiler | None = Field(default=None, description="Timings of summarizer, seconds")
