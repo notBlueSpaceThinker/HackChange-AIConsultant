@@ -56,16 +56,20 @@ class ChatResponse(BaseModel):
     response: str = Field(description="LLM Responce")
     ready_for_lead: bool = Field(default=False)
     sources: list[SourceRef] = Field(default_factory=list, description="Sources used in the answer")
-    profiler: Profiler | None = Field(default=None, description="Timings of pipeline stages, seconds")
+    profiler: Profiler | None = Field(
+        default=None, description="Timings of pipeline stages, seconds"
+    )
 
     @classmethod
-    def from_reply(cls, reply: ConsultantReply, session_id: str, profiler: Profiler | None = None) -> "ChatResponse":
+    def from_reply(
+        cls, reply: ConsultantReply, session_id: str, profiler: Profiler | None = None
+    ) -> "ChatResponse":
         return cls(
             session_id=session_id,
             response=reply.answer,
             ready_for_lead=reply.ready_for_lead,
             sources=[SourceRef.from_scored(item) for item in reply.chunks],
-            profiler=profiler
+            profiler=profiler,
         )
 
 
