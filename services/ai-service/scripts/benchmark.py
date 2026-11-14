@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import csv
+import io
 import json
 import logging
 import math
@@ -98,7 +99,7 @@ def read_csv(path: Path) -> list[dict]:
         dialect = csv.Sniffer().sniff(text[:4096], delimiters=",;\t")
     except csv.Error:
         dialect = csv.excel
-    rows = list(csv.DictReader(text.splitlines(), dialect=dialect))
+    rows = list(csv.DictReader(io.StringIO(text), dialect=dialect))
     return [{(k or "").strip().lower(): (v or "").strip() for k, v in row.items()} for row in rows]
 
 
