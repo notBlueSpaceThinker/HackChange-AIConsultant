@@ -101,23 +101,24 @@ async def retrieve(
     client = get_async_qdrant_client()
     with profiler.measure("embedding_time"):
         dense_vector = await embed_query(query)
-    search_result = await client.query_points(
-        collection_name=settings.qdrant.collection_name,
-        prefetch=[
-            models.Prefetch(
-                query=dense_vector,
-                using=DENSE_VECTOR_NAME,
-                limit=top_k,
-            ),
-            models.Prefetch(
-                query=models.Document(text=query, model=SPARSE_MODEL_NAME),
-                using=SPARSE_VECTOR_NAME,
-                limit=top_k,
-            ),
-        ],
-        query=models.FusionQuery(fusion=models.Fusion.RRF),
-        limit=top_k,
-    )
+    with profiler.measure("db_search_time"):
+        search_result = await client.query_points(
+            collection_name=settings.qdrant.collection_name,
+            prefetch=[
+                models.Prefetch(
+                    query=dense_vector,
+                    using=DENSE_VECTOR_NAME,
+                    limit=top_k,
+                ),
+                models.Prefetch(
+                    query=models.Document(text=query, model=SPARSE_MODEL_NAME),
+                    using=SPARSE_VECTOR_NAME,
+                    limit=top_k,
+                ),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            limit=top_k,
+        )
 
     chunks: list[ScoredChunk] = [
         ScoredChunk(
@@ -134,6 +135,7 @@ async def retrieve(
             chunks = await _rerank_chunks(query, chunks)
 
     if with_expansion:
-        expanded_chunks = await _expand_chunks(chunks)
+        with profiler.measure("db_search_time"):
+            expanded_chunks = await _expand_chunks(chunks)
         chunks.extend(expanded_chunks)
     return chunks

@@ -20,6 +20,9 @@ class BaseProfiler(BaseModel):
 
 class RagProfiler(BaseProfiler):
     embedding_time: float | None = Field(default=None, ge=0, description="Embedding model, seconds")
+    db_search_time: float | None = Field(
+        default=None, ge=0, description="Vector DB search, seconds"
+    )
     reranking_time: float | None = Field(default=None, ge=0, description="Reranker, seconds")
     generation_time: float | None = Field(default=None, ge=0, description="Main LLM, seconds")
     rag_time: float | None = Field(default=None, ge=0, description="Whole RAG pipeline, seconds")

@@ -113,6 +113,9 @@ components:
           type: array
           title: Sources
           description: Sources used in the answer
+        profiler:
+          $ref: '#/components/schemas/RagProfiler'
+          description: Timings of pipeline stages, seconds
       type: object
       required:
       - session_id
@@ -144,6 +147,45 @@ components:
       - author
       - message
       title: MessageHistoryItem
+    RagProfiler:
+      properties:
+        embedding_time:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Embedding Time
+          description: Embedding model, seconds
+        db_search_time:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Db Search Time
+          description: Vector DB search, seconds
+        reranking_time:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Reranking Time
+          description: Reranker, seconds
+        generation_time:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Generation Time
+          description: Main LLM, seconds
+        rag_time:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Rag Time
+          description: Whole RAG pipeline, seconds
+      type: object
+      title: RagProfiler
     SourceRef:
       properties:
         doc_id:
@@ -169,6 +211,17 @@ components:
       - score
       - text
       title: SourceRef
+    SummarizerProfiler:
+      properties:
+        summarizer_time:
+          anyOf:
+          - type: number
+            minimum: 0.0
+          - type: 'null'
+          title: Summarizer Time
+          description: Summarizer LLM, seconds
+      type: object
+      title: SummarizerProfiler
     SummarizerRequest:
       properties:
         session_id:
@@ -199,6 +252,9 @@ components:
         summary:
           type: string
           title: Summary
+        profiler:
+          $ref: '#/components/schemas/SummarizerProfiler'
+          description: Timings of summarizer, seconds
       type: object
       required:
       - session_id
