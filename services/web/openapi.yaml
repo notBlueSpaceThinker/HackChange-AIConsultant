@@ -1,0 +1,223 @@
+
+openapi: 3.0.3
+
+info:
+  title: AI Consultant API
+  description: API для работы с AI-консультантом, чатами и профилями пользователей.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Chat
+    description: Управление чатами и сообщениями
+  - name: Profile
+    description: Управление профилем пользователя
+
+paths:
+  /message:
+    post:
+      tags:
+        - Chat
+      summary: Отправить сообщение в чат
+      operationId: processMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageRequest'
+            example:
+              query: "Как работает искусственный интеллект?"
+              chat_id: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Успешный ответ AI-консультанта
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: "Искусственный интеллект — это..."
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /profile:
+    post:
+      tags:
+        - Profile
+      summary: Создать профиль пользователя
+      operationId: createProfile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProfileRequest'
+            example:
+              session_id: "550e8400-e29b-41d4-a716-446655440000"
+              full_name: "Иван Иванов"
+              phone: "+79991234567"
+              company: "Example Company"
+      responses:
+        '201':
+          description: Профиль успешно создан
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /chat:
+    post:
+      tags:
+        - Chat
+      summary: Создать новый чат
+      operationId: createChat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChatRequest'
+            example:
+              session_id: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Чат успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateChatResponse'
+              example:
+                chat_id: "650e8400-e29b-41d4-a716-446655440000"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags:
+        - Chat
+      summary: Получить историю сообщений чата
+      operationId: getChatHistory
+      parameters:
+        - name: chat_id
+          in: query
+          required: true
+          description: UUID чата
+          schema:
+            type: string
+            format: uuid
+          example: "650e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: История сообщений
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatHistoryResponse'
+              example:
+                history:
+                  - "Привет"
+                  - "Здравствуйте! Чем могу помочь?"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    MessageRequest:
+      type: object
+      required:
+        - query
+        - chat_id
+      properties:
+        query:
+          type: string
+          description: Текст сообщения пользователя
+          example: "Расскажи о компании"
+        chat_id:
+          type: string
+          format: uuid
+          description: UUID чата
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Ответ AI-консультанта
+
+    CreateProfileRequest:
+      type: object
+      required:
+        - session_id
+        - full_name
+        - phone
+        - company
+      properties:
+        session_id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        phone:
+          type: string
+        company:
+          type: string
+
+    CreateChatRequest:
+      type: object
+      required:
+        - session_id
+      properties:
+        session_id:
+          type: string
+          format: uuid
+          description: UUID пользовательской сессии
+
+    CreateChatResponse:
+      type: object
+      properties:
+        chat_id:
+          type: string
+          format: uuid
+          description: UUID созданного чата
+
+    ChatHistoryResponse:
+      type: object
+      properties:
+        history:
+          type: array
+          items:
+            type: string
+          description: Список сообщений чата
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Описание ошибки
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: "invalid chat ID"
+
+    InternalServerError:
+      description: Внутренняя ошибка сервера
+      content:
+        text/plain:
+          schema:
+            type: string
+          example: "failed to process message"

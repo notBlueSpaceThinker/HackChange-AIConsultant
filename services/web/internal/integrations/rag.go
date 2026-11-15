@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"github.com/google/uuid"
+	"web/internal/service"
 )
 
 
@@ -70,7 +72,8 @@ func NewRag(baseURL string, client *http.Client) *Rag {
 }
 
 // Completions отправляет запрос к эндпоинту /completions
-func (r *Rag) Completions(ctx context.Context, req *RagRequest) (*RagResponse, error) {
+func (r *Rag) Completions(ctx context.Context, req *service.RagRequest) (*service.RagResponse, error) {
+
 	url := fmt.Sprintf("%s/completions", r.BaseURL)
 
 	jsonData, err := json.Marshal(req)
@@ -97,7 +100,18 @@ func (r *Rag) Completions(ctx context.Context, req *RagRequest) (*RagResponse, e
 		if err := json.NewDecoder(resp.Body).Decode(&ragResp); err != nil {
 			return nil, fmt.Errorf("failed to decode 200 response: %w", err)
 		}
-		return &ragResp, nil
+		return &service.RagResponse{
+			ID: ragResp.ID,
+			Response: ragResp.Response,
+			ReadyForLead: ragResp.ReadyForLead,
+			Sources: service.Sources{
+				DocID: ragResp.Sources.DocID,
+				ChunkID: ragResp.Sources.ChunkID,
+				FilePath: ragResp.Sources.FilePath,
+				Score: ragResp.Sources.Score,
+				Text: ragResp.Sources.Text,
+			},
+		}, nil
 
 	case http.StatusUnprocessableEntity:
 		var valErr HTTPValidationError
@@ -110,3 +124,44 @@ func (r *Rag) Completions(ctx context.Context, req *RagRequest) (*RagResponse, e
 		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 }
+
+func (r *Rag) GetSummary(ctx context.Context, userMessage string, assistantMessage string, chatID uuid.UUID) (string, error) {
+	// return "This is a mock summary from the GetSummary method.", nil
+	
+	url := fmt.Sprintf("%s/summary", r.BaseURL)
+	jsonData, err := json.Marshal(map[string]interface{}{
+		"user_message":      userMessage,
+		"assistant_message": assistantMessage,
+		"chat_id":           chatID.String(),
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", fmt.Errorf("failed to create http request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := r.HTTPClient.Do(httpReq)
+	if err != nil {
+		return "", fmt.Errorf("request execution failed: %w", err)
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var summaryResp struct {
+		Summary string `json:"summary"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&summaryResp); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return summaryResp.Summary, nil}

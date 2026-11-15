@@ -3,7 +3,7 @@ SELECT 'up SQL query';
 
 CREATE TABLE IF NOT EXISTS message (
     id uuid PRIMARY KEY,
-    chat_id INT NOT NULL REFERENCES chat(id),
+    chat_id uuid NOT NULL REFERENCES chat(id),
     message TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

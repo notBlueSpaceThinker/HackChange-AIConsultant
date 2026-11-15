@@ -37,8 +37,9 @@ func (r *ChatRepository) CreateChat(ctx context.Context, session_id uuid.UUID, c
 
 func (r *ChatRepository) GetChatHistory(ctx context.Context, chatID uuid.UUID, limit int) ([]service.HistoryUnit, error) {
 	query, args, err := sq.Select("author", "message").
-		From("chat_history").
-		Where(sq.Eq{"chat_id": chatID}).
+		From("chat").
+		Join("message ON chat.id = message.chat_id").
+		Where(sq.Eq{"chat.id": chatID}).
 		OrderBy("created_at DESC").
 		Limit(uint64(limit)).
 		PlaceholderFormat(sq.Dollar).
@@ -65,7 +66,7 @@ func (r *ChatRepository) GetChatHistory(ctx context.Context, chatID uuid.UUID, l
 }
 
 func (r *ChatRepository) GetChatSummary(ctx context.Context, chatID uuid.UUID) (string, error) {
-	query, args, err := sq.Select("summary").
+	query, args, err := sq.Select("COALESCE(summary, '')").
 		From("chat").
 		Where(sq.Eq{"id": chatID}).
 		PlaceholderFormat(sq.Dollar).

@@ -1,10 +1,10 @@
 -- +goose Up
 SELECT 'up SQL query';
-CREATE TABLE IF NOT EXISTS user (
+CREATE TABLE IF NOT EXISTS profile (
     id uuid PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
     phone VARCHAR(20) ,
-    company VARCHAR(255) ,
+    company VARCHAR(255) 
 );
 
 

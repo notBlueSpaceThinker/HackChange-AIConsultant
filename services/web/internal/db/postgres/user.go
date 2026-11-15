@@ -1,25 +1,26 @@
 package postgres
 
-import(
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/google/uuid"
-	sq "github.com/Masterminds/squirrel"
+import (
 	"context"
 	"fmt"
+
+	sq "github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type UserRepository struct {
+type ProfileRepository struct {
 	pool *pgxpool.Pool
 }
 
-func NewUserRepository(pool *pgxpool.Pool) *UserRepository {
-	return &UserRepository{pool: pool}
+func NewProfileRepository(pool *pgxpool.Pool) *ProfileRepository {
+	return &ProfileRepository{pool: pool}
 }
 
-func (r *UserRepository) CreateProfile(ctx context.Context, userID uuid.UUID, sessionID, fullName, phone, company string) error {
-	query, args, err := sq.Insert("user").
-		Columns("id", "session_id", "full_name", "phone", "company").
-		Values(userID, sessionID, fullName, phone, company).
+func (r *ProfileRepository) CreateProfile(ctx context.Context, userID uuid.UUID, sessionID, fullName, phone, company string) error {
+	query, args, err := sq.Insert("profile").
+		Columns("id",  "full_name", "phone", "company").
+		Values(userID, fullName, phone, company).
 		PlaceholderFormat(sq.Dollar). 
 		ToSql()
 	if err != nil {

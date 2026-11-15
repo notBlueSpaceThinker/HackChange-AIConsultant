@@ -6,15 +6,19 @@ import (
 	"github.com/google/uuid"
 )
 
-type UserRepository interface {
+type ProfileRepository interface {
 	CreateProfile(ctx context.Context, userID uuid.UUID, sessionID, fullName, phone, company string) error
 }
 
-type User struct {
-	userRepo UserRepository
+type Profile struct {
+	profileRepo ProfileRepository
 }
 
-func (u *User) CreateProfile(ctx context.Context, sessionID, fullName, phone, company string) error {
+func NewProfileService(profileRepo ProfileRepository) *Profile {
+	return &Profile{profileRepo: profileRepo}
+}
+
+func (p *Profile) CreateProfile(ctx context.Context, sessionID, fullName, phone, company string) error {
 	userID := uuid.New()
-	return u.userRepo.CreateProfile(ctx, userID, sessionID, fullName, phone, company)
+	return p.profileRepo.CreateProfile(ctx, userID, sessionID, fullName, phone, company)
 }
