@@ -11,6 +11,7 @@ from src.core.qdrant import (
 from src.core.reranker import rerank_documents
 from src.kb.cleaner import clean_text
 from src.schemas.domain.chunk import Chunk, ScoredChunk, SectionType
+from src.schemas.domain.profiler import RagProfiler
 
 DEFAULT_EXPAND_TYPES: set[SectionType] = {
     SectionType.RESTRICTION,
@@ -89,29 +90,35 @@ async def retrieve(
     top_k: int = settings.rag.top_k,
     with_rerank: bool = True,
     with_expansion: bool = True,
+    profiler: RagProfiler | None = None,
 ) -> list[ScoredChunk]:
     query = clean_text(query)
     if not query:
         return []
+    if profiler is None:
+        profiler = RagProfiler()
 
     client = get_async_qdrant_client()
-    search_result = await client.query_points(
-        collection_name=settings.qdrant.collection_name,
-        prefetch=[
-            models.Prefetch(
-                query=await embed_query(query),
-                using=DENSE_VECTOR_NAME,
-                limit=top_k,
-            ),
-            models.Prefetch(
-                query=models.Document(text=query, model=SPARSE_MODEL_NAME),
-                using=SPARSE_VECTOR_NAME,
-                limit=top_k,
-            ),
-        ],
-        query=models.FusionQuery(fusion=models.Fusion.RRF),
-        limit=top_k,
-    )
+    with profiler.measure("embedding_time"):
+        dense_vector = await embed_query(query)
+    with profiler.measure("db_search_time"):
+        search_result = await client.query_points(
+            collection_name=settings.qdrant.collection_name,
+            prefetch=[
+                models.Prefetch(
+                    query=dense_vector,
+                    using=DENSE_VECTOR_NAME,
+                    limit=top_k,
+                ),
+                models.Prefetch(
+                    query=models.Document(text=query, model=SPARSE_MODEL_NAME),
+                    using=SPARSE_VECTOR_NAME,
+                    limit=top_k,
+                ),
+            ],
+            query=models.FusionQuery(fusion=models.Fusion.RRF),
+            limit=top_k,
+        )
 
     chunks: list[ScoredChunk] = [
         ScoredChunk(
@@ -124,9 +131,11 @@ async def retrieve(
         return []
 
     if with_rerank:
-        chunks = await _rerank_chunks(query, chunks)
+        with profiler.measure("reranking_time"):
+            chunks = await _rerank_chunks(query, chunks)
 
     if with_expansion:
-        expanded_chunks = await _expand_chunks(chunks)
+        with profiler.measure("db_search_time"):
+            expanded_chunks = await _expand_chunks(chunks)
         chunks.extend(expanded_chunks)
     return chunks
