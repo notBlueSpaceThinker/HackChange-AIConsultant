@@ -27,7 +27,7 @@ func main() {
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	dsn := "postgres://myuser:mypassword@localhost:5432/mydb?sslmode=disable"
+	dsn := "postgres://myuser:mypassword@postgres:5432/mydb?sslmode=disable"
 	pool, err := postgres.InitPool(context.Background(), dsn)
 	if err != nil {
 		log.Fatalf("Ошибка при инициализации пула соединений с базой данных: %v", err)
@@ -38,7 +38,7 @@ func main() {
 		log.Fatalf("Ошибка установки диалекта goose: %v", err)
 	}
 
-	migrationsPath := "../../migrations"
+	migrationsPath := "/app/migrations"
 
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -59,7 +59,7 @@ func main() {
 	}
 
 	log.Println("Миграции успешно применены!")
-	rag := integrations.NewRag("http://localhost:8000", nil)
+	rag := integrations.NewRag("http://ai-service:8000", nil)
 	chatRepo := postgres.NewChatRepository(pool)
 	messageRepo := postgres.NewMessageRepository(pool)
 	chatService := service.NewChatService(chatRepo, rag, messageRepo)
