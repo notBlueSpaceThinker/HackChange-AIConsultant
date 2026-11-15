@@ -12,21 +12,36 @@ import (
 
 	"web/internal/handler"
 	"web/internal/service"
+	"web/internal/db/postgres"
+	"github.com/gorilla/mux"
+	"web/internal/integrations"
 )
 
 func main() {
 	_, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	chatService := service.NewChatService()
+	dsn := "postgres://myuser:mypassword@localhost:5432/mydb?sslmode=disable"
+	pool, err := postgres.InitPool(context.Background(), dsn)
+	if err != nil {
+		log.Fatalf("Ошибка при инициализации пула соединений с базой данных: %v", err)
+	}
+
+	rag := integrations.NewRag("http://localhost:8000", nil)
+	chatRepo := postgres.NewChatRepository(pool)
+	chatService := service.NewChatService(chatRepo, rag)
 	chatHandler := handler.NewChatHandler(chatService)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/message", chatHandler.GetMessage) 
+	
+
+	r := mux.NewRouter()
+
+	r.HandleFunc("/message", chatHandler.GetMessage).Methods(http.MethodPost)
+	r.HandleFunc("/profile", chatHandler.CreateProfile).Methods(http.MethodPost)
 
 	server := &http.Server{
 		Addr:    ":8080",
-		Handler: mux,
+		Handler: r,
 	}
 
 	stop := make(chan os.Signal, 1)

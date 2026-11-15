@@ -89,11 +89,6 @@ components:
           - type: string
           - type: 'null'
           title: Summary
-        files_transcript:
-          additionalProperties:
-            type: string
-          type: object
-          title: Files Transcript
       type: object
       required:
       - session_id
@@ -144,11 +139,6 @@ components:
           type: string
           minLength: 1
           title: Message
-        files_transcript:
-          additionalProperties:
-            type: string
-          type: object
-          title: Files Transcript
       type: object
       required:
       - author
