@@ -28,12 +28,20 @@ type History struct {
 	Message string `json:"message"`
 }
 
-type RagResponse struct {
-	ID      string   `json:"session_id"`
-	Response string `json:"response"`
-	ReadyForLead bool     `json:"ready_for_lead"`
-	Sources sources  `json:"sources"`
+type RagProfiler struct {
+	EmbeddingTime  *float64 `json:"embedding_time,omitempty"`
+	DBSearchTime   *float64 `json:"db_search_time,omitempty"`
+	RerankingTime  *float64 `json:"reranking_time,omitempty"`
+	GenerationTime *float64 `json:"generation_time,omitempty"`
+	RagTime        *float64 `json:"rag_time,omitempty"`
+}
 
+type RagResponse struct {
+	ID           string      `json:"id"`
+	Response     string      `json:"response"`
+	ReadyForLead bool        `json:"ready_for_lead"`
+	Sources      sources     `json:"sources"`
+	Profiler     RagProfiler `json:"profiler"` // Метрики сгруппированы вместе
 }
 
 type sources struct {
@@ -111,6 +119,13 @@ func (r *Rag) Completions(ctx context.Context, req *service.RagRequest) (*servic
 				Score: ragResp.Sources.Score,
 				Text: ragResp.Sources.Text,
 			},
+			Profiler: service.RagProfiler{
+				EmbeddingTime : ragResp.Profiler.DBSearchTime,
+				DBSearchTime: ragResp.Profiler.DBSearchTime,
+				RerankingTime: ragResp.Profiler.RerankingTime,
+				GenerationTime: ragResp.Profiler.GenerationTime,
+				RagTime:ragResp.Profiler.RagTime,
+			},
 		}, nil
 
 	case http.StatusUnprocessableEntity:
@@ -125,7 +140,7 @@ func (r *Rag) Completions(ctx context.Context, req *service.RagRequest) (*servic
 	}
 }
 
-func (r *Rag) GetSummary(ctx context.Context, userMessage string, assistantMessage string, chatID uuid.UUID) (string, error) {
+func (r *Rag) GetSummary(ctx context.Context, userMessage string, assistantMessage string, chatID uuid.UUID) (service.SummaryResp, error) {
 	// return "This is a mock summary from the GetSummary method.", nil
 	
 	url := fmt.Sprintf("%s/summary", r.BaseURL)
@@ -136,32 +151,40 @@ func (r *Rag) GetSummary(ctx context.Context, userMessage string, assistantMessa
 	})
 
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
+		return service.SummaryResp{}, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return "", fmt.Errorf("failed to create http request: %w", err)
+		return service.SummaryResp{}, fmt.Errorf("failed to create http request: %w", err)
 	}
 
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := r.HTTPClient.Do(httpReq)
 	if err != nil {
-		return "", fmt.Errorf("request execution failed: %w", err)
+		return service.SummaryResp{}, fmt.Errorf("request execution failed: %w", err)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		return service.SummaryResp{}, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 
 	var summaryResp struct {
 		Summary string `json:"summary"`
+		Profiler Profiler `json:"profiler"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&summaryResp); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
+		return service.SummaryResp{}, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	return summaryResp.Summary, nil}
+	return service.SummaryResp{
+
+	}, nil
+}
+
+type Profiler struct {
+	SummarizerTime *float64 `json:"summarizer_time"`
+} 

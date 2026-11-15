@@ -5,15 +5,16 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/google/uuid"
 	"errors"
+
+	"github.com/google/uuid"
 )
 
 type ChatRepository interface {
 	CreateChat(ctx context.Context, sessionID uuid.UUID, chatID uuid.UUID) (uuid.UUID, error)
 	GetChatHistory(ctx context.Context, chatID uuid.UUID, limit int) ([]HistoryUnit, error)
 	GetChatSummary(ctx context.Context, chatID uuid.UUID) (string, error)
-	UpdateChatSummary(ctx context.Context, chatID uuid.UUID, summary string) error
+	UpdateChatSummary(ctx context.Context, chatID uuid.UUID, resp string) error
 }
 
 type MessageRepository interface {
@@ -45,7 +46,16 @@ type RagResponse struct {
 	Response string 
 	ReadyForLead bool
 	Sources Sources  
+	Profiler     RagProfiler }
+
+type RagProfiler struct {
+	EmbeddingTime  *float64 
+	DBSearchTime   *float64
+	RerankingTime  *float64 
+	GenerationTime *float64 
+	RagTime        *float64 
 }
+
 
 type Sources struct {
 	DocID string 
@@ -57,9 +67,13 @@ type Sources struct {
 
 type RagIntegration interface {
 	Completions(ctx context.Context, req *RagRequest) (*RagResponse, error)
-	GetSummary(ctx context.Context, userMessage string, assistantMessage string, chatID uuid.UUID) (string, error)
+	GetSummary(ctx context.Context, userMessage string, assistantMessage string, chatID uuid.UUID) (SummaryResp, error)
 }
 
+type SummaryResp struct {
+	Summary string
+	SummarizerTime *float64
+}
 
 type Chat struct {
 	chatRepo ChatRepository
@@ -104,8 +118,8 @@ func (c *Chat) ProcessIncomingMessage(ctx context.Context, query string, chatID 
 	c.messageRepo.SaveMessage(ctx, uuid.New(), chatID, req.Msg, AuthorAssistant)
 
 	go func() {
-		summary, _ := c.ragIntegration.GetSummary(ctx, query, resp.Response, chatID)
-		c.chatRepo.UpdateChatSummary(ctx, chatID, summary)
+		resp, _ := c.ragIntegration.GetSummary(ctx, query, resp.Response, chatID)
+		c.chatRepo.UpdateChatSummary(ctx, chatID, resp.Summary)
 	}()
 
 	return resp.Response, nil

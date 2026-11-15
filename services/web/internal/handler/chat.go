@@ -29,12 +29,10 @@ func NewChatHandler(service ChatService, profileService ProfileService) *ChatHan
 	}
 }
 
-
 type getMessageRequest struct{
 	Query string `json:"query"`
 	ChatID string `json:"chat_id"`
 }
-
 
 func (o *ChatHandler) ProcessMessage(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)

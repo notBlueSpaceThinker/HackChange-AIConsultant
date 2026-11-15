@@ -171,6 +171,7 @@ components:
         company:
           type: string
 
+
     CreateChatRequest:
       type: object
       required:
