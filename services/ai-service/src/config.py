@@ -27,7 +27,7 @@ def _resolve_docker_host_url(url: str) -> str:
     if not _in_docker():
         return url
     parsed = urlsplit(url)
-    if parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+    if parsed.hostname not in {"127.0.0.1", "localhost", "::1", "0.0.0.0"}:
         return url
     netloc = f"host.docker.internal:{parsed.port}" if parsed.port else "host.docker.internal"
     if parsed.username or parsed.password:
