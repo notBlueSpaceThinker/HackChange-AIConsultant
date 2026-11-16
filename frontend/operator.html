@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Energytool — Панель оператора</title>
+  <link rel="stylesheet" href="src/styles/main.css?v=12">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar op-sidebar" aria-label="Список диалогов">
+    <div class="sidebar-top">
+      <div class="op-filters" id="opFilters">
+        <button type="button" class="op-filter-btn active" data-filter="all">Все</button>
+        <button type="button" class="op-filter-btn" data-filter="lead">С заявкой</button>
+        <button type="button" class="op-filter-btn" data-filter="open">Открытые</button>
+      </div>
+    </div>
+    <div class="sidebar-label">Диалоги</div>
+    <div class="chat-list" id="opChatList"></div>
+  </aside>
+
+  <main class="chat">
+    <header>
+      <h1>
+        <img src="logo.svg" alt="МТС" class="logo">
+        <div class="brand">
+          <div><span>Energytool</span> консультант</div>
+          <span class="ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H10l-4 4v-4H4z"/><path d="M12 8.2l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="#FF0032" stroke="#FF0032" stroke-width="1"/></svg>Оператор</span>
+        </div>
+      </h1>
+      <div class="actions">
+        <button type="button" id="refreshBtn">Обновить</button>
+        <a href="index.html" class="nav-link">← Чат клиента</a>
+      </div>
+    </header>
+    <div class="op-content" id="opContent">
+      <p class="empty">Выберите диалог слева, чтобы посмотреть заявку, саммари и переписку.</p>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="src/operator.js?v=14"></script>
+</body>
+</html>

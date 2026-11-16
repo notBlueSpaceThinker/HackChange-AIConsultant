@@ -53,6 +53,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HTTPValidationError'
+  /documents/{doc_id}:
+    get:
+      tags:
+      - chat
+      summary: Get Document
+      operationId: get_document_documents__doc_id__get
+      parameters:
+      - name: doc_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Doc Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
   /health:
     get:
       summary: Health
@@ -121,6 +148,46 @@ components:
       - session_id
       - response
       title: ChatResponse
+    DocumentChunkRef:
+      properties:
+        chunk_id:
+          type: string
+          title: Chunk Id
+        chunk_index:
+          type: integer
+          title: Chunk Index
+        title:
+          type: string
+          title: Title
+          default: ''
+        text:
+          type: string
+          title: Text
+      type: object
+      required:
+      - chunk_id
+      - chunk_index
+      - text
+      title: DocumentChunkRef
+    DocumentResponse:
+      properties:
+        doc_id:
+          type: string
+          title: Doc Id
+        filepath:
+          type: string
+          title: Filepath
+        chunks:
+          items:
+            $ref: '#/components/schemas/DocumentChunkRef'
+          type: array
+          title: Chunks
+      type: object
+      required:
+      - doc_id
+      - filepath
+      - chunks
+      title: DocumentResponse
     HTTPValidationError:
       properties:
         detail:
@@ -197,6 +264,10 @@ components:
         filepath:
           type: string
           title: Filepath
+        title:
+          type: string
+          title: Title
+          default: ''
         score:
           type: number
           title: Score

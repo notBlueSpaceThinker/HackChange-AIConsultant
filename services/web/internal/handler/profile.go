@@ -7,7 +7,7 @@ import (
 )
 
 type ProfileService interface {
-	CreateProfile(ctx context.Context, sessionID string, fullName, phone, company string) error
+	CreateProfile(ctx context.Context, sessionID, chatID, fullName, phone, company string) error
 }
 
 type ProfileHandler struct {
@@ -20,6 +20,7 @@ func NewProfileHandler(service ProfileService) *ProfileHandler {
 
 type createProfileRequest struct {
 	SessionID string `json:"session_id"`
+	ChatID    string `json:"chat_id"`
 	FullName  string `json:"full_name"`
 	Phone     string `json:"phone"`
 	Company   string `json:"company"`
@@ -31,5 +32,5 @@ func (h *ProfileHandler) CreateProfile(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return h.service.CreateProfile(r.Context(), req.SessionID, req.FullName, req.Phone, req.Company)
+	return h.service.CreateProfile(r.Context(), req.SessionID, req.ChatID, req.FullName, req.Phone, req.Company)
 }

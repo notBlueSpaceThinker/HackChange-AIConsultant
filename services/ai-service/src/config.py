@@ -1,8 +1,9 @@
 import os
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 SERVICE_DIR = Path(__file__).resolve().parent.parent
@@ -11,6 +12,30 @@ SRC_DIR = SERVICE_DIR / "src"
 TESTS_DIR = SERVICE_DIR / "tests"
 SCRIPTS_DIR = SERVICE_DIR / "scripts"
 DATA_DIR = os.getenv("DATA_DIR", default=PROJECT_DIR / "data")
+
+
+def _in_docker() -> bool:
+    return Path("/.dockerenv").exists() or os.getenv("RUNNING_IN_DOCKER", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def _resolve_docker_host_url(url: str) -> str:
+    """Map localhost/127.0.0.1 URLs to host.docker.internal inside Docker containers."""
+    if not _in_docker():
+        return url
+    parsed = urlsplit(url)
+    if parsed.hostname not in {"127.0.0.1", "localhost", "::1", "0.0.0.0"}:
+        return url
+    netloc = f"host.docker.internal:{parsed.port}" if parsed.port else "host.docker.internal"
+    if parsed.username or parsed.password:
+        auth = parsed.username or ""
+        if parsed.password:
+            auth = f"{auth}:{parsed.password}"
+        netloc = f"{auth}@{netloc}"
+    return urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
 
 
 class BaseConfig(BaseSettings):
@@ -22,7 +47,18 @@ class BaseConfig(BaseSettings):
     )
 
 
-class LLMConfig(BaseConfig):
+class _EndpointConfig(BaseConfig):
+    """Shared base for model server endpoints with Docker localhost resolution."""
+
+    url: str = "http://127.0.0.1:8080/v1"
+
+    @field_validator("url", mode="after")
+    @classmethod
+    def _rewrite_localhost_in_docker(cls, value: str) -> str:
+        return _resolve_docker_host_url(value)
+
+
+class LLMConfig(_EndpointConfig):
     model_config = SettingsConfigDict(
         env_prefix="LLM_",
     )
@@ -47,12 +83,12 @@ class LLMConfig(BaseConfig):
         default=0.2,
         validation_alias=AliasChoices("TEMPERATURE", "LLM_TEMPERATURE"),
     )
-    timeout: float = 60.0
+    timeout: float = 240.0
     context_window: int = 10000
     max_retries: int = 5
 
 
-class EmbeddingConfig(BaseConfig):
+class EmbeddingConfig(_EndpointConfig):
     model_config = SettingsConfigDict(
         env_prefix="EMB_",
     )
@@ -74,7 +110,7 @@ class EmbeddingConfig(BaseConfig):
     max_retries: int = 5
 
 
-class RerankerConfig(BaseConfig):
+class RerankerConfig(_EndpointConfig):
     model_config = SettingsConfigDict(
         env_prefix="RRK_",
     )

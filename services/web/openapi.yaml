@@ -129,6 +129,90 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+    delete:
+      tags:
+        - Chat
+      summary: Удалить чат и его сообщения
+      operationId: deleteChat
+      parameters:
+        - name: chat_id
+          in: query
+          required: true
+          description: UUID чата
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Чат удалён
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /document:
+    get:
+      tags:
+        - Chat
+      summary: Получить все чанки документа
+      operationId: getDocument
+      parameters:
+        - name: doc_id
+          in: query
+          required: true
+          description: UUID документа
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Содержимое документа по чанкам
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Документ не найден
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /operator/chats:
+    get:
+      tags:
+        - Chat
+      summary: Список всех чатов (открытых и с заявками) для панели оператора
+      operationId: listOperatorChats
+      responses:
+        '200':
+          description: Список чатов
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /operator/chat:
+    get:
+      tags:
+        - Chat
+      summary: Детальная информация по чату (заявка, саммари, сообщения)
+      operationId: getOperatorChat
+      parameters:
+        - name: chat_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Детали чата
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          description: Чат не найден
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   schemas:
     MessageRequest:
@@ -152,6 +236,82 @@ components:
         message:
           type: string
           description: Ответ AI-консультанта
+        ready_for_lead:
+          type: boolean
+          default: false
+          description: Готовность к сбору контактов клиента
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SourceRef'
+          description: Источники из базы знаний, использованные в ответе
+        profiler:
+          $ref: '#/components/schemas/RagProfiler'
+          description: Тайминги этапов RAG-пайплайна в секундах
+
+    SourceRef:
+      type: object
+      properties:
+        doc_id:
+          type: string
+        chunk_id:
+          type: string
+        filepath:
+          type: string
+        title:
+          type: string
+        score:
+          type: number
+        text:
+          type: string
+
+    RagProfiler:
+      type: object
+      properties:
+        embedding_time:
+          type: number
+          nullable: true
+          description: Время генерации эмбеддинга, сек
+        db_search_time:
+          type: number
+          nullable: true
+          description: Время поиска в векторной БД (Qdrant), сек
+        reranking_time:
+          type: number
+          nullable: true
+          description: Время реранкинга, сек
+        generation_time:
+          type: number
+          nullable: true
+          description: Время генерации ответа LLM, сек
+        rag_time:
+          type: number
+          nullable: true
+          description: Общее время RAG-пайплайна, сек
+
+    DocumentChunk:
+      type: object
+      properties:
+        chunk_id:
+          type: string
+        chunk_index:
+          type: integer
+        title:
+          type: string
+        text:
+          type: string
+
+    DocumentResponse:
+      type: object
+      properties:
+        doc_id:
+          type: string
+        filepath:
+          type: string
+        chunks:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentChunk'
 
     CreateProfileRequest:
       type: object
@@ -164,6 +324,10 @@ components:
         session_id:
           type: string
           format: uuid
+        chat_id:
+          type: string
+          format: uuid
+          description: Опциональный UUID чата для точной привязки заявки
         full_name:
           type: string
         phone:

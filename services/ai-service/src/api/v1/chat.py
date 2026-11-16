@@ -1,9 +1,18 @@
 import logging
+from uuid import UUID
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from src.rag.pipeline import run_rag_pipeline
-from src.schemas.api.chat import ChatRequest, ChatResponse, SummarizerRequest, SummarizerResponse
+from src.rag.retriever import get_document_chunks
+from src.schemas.api.chat import (
+    ChatRequest,
+    ChatResponse,
+    DocumentChunkRef,
+    DocumentResponse,
+    SummarizerRequest,
+    SummarizerResponse,
+)
 from src.schemas.domain.state import ConsultantReply, SummarizerReply
 from src.summarization.pipeline import run_summarizer_pipeline
 
@@ -52,4 +61,16 @@ async def summarize(request: SummarizerRequest) -> SummarizerResponse:
         session_id=request.session_id,
         summary=reply.summary,
         profiler=reply.profiler,
+    )
+
+
+@router.get("/documents/{doc_id}")
+async def get_document(doc_id: UUID) -> DocumentResponse:
+    chunks = await get_document_chunks(str(doc_id))
+    if not chunks:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return DocumentResponse(
+        doc_id=str(doc_id),
+        filepath=chunks[0].filepath,
+        chunks=[DocumentChunkRef.from_chunk(chunk) for chunk in chunks],
     )
