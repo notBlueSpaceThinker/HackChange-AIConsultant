@@ -146,7 +146,7 @@ Implemented in `services/ai-service/src/rag/pipeline.py` (`run_rag_pipeline`):
    EMB_URL=http://127.0.0.1:8081/v1
    RRK_URL=http://127.0.0.1:8082/v1
    ```
-   > **Docker & LAN note:** `docker-compose.yml` configures `ai-service` to reach the host via `http://host.docker.internal:8080..8082/v1`. If you serve models from another machine on your LAN, bind `llama-server` to `0.0.0.0` and point those URLs to the host's LAN IP.
+   > **External API & Docker note:** If you use an external OpenAI-compatible API or remote server instead of local `llama-server`, simply set its `LLM_URL` / `EMB_URL` / `RRK_URL`, model names, and API keys (`LLM_API_KEY`, `EMB_API_KEY`, `RRK_API_KEY`) directly in `services/ai-service/.env` and skip launching `serve_llama.py`. When running inside Docker, `127.0.0.1` / `localhost` URLs are automatically mapped to `host.docker.internal`, while external or LAN URLs are used as-is.
 3. Start all three model servers:
    ```bash
    cd services/ai-service

@@ -35,7 +35,9 @@ services:
     ports:
       - "8090:8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
   ai-service:
     build:
@@ -44,11 +46,13 @@ services:
     container_name: ai_service
     env_file:
       - ./services/ai-service/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       QDRANT_URL: http://qdrant:6333
-      LLM_URL: http://host.docker.internal:8080/v1
-      EMB_URL: http://host.docker.internal:8081/v1
-      RRK_URL: http://host.docker.internal:8082/v1
+    depends_on:
+      - qdrant
+    restart: unless-stopped
     ports:
       - "8000:8000"
 
