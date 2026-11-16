@@ -18,7 +18,7 @@ An AI-powered consultant for MTS EnergyTool clients. The system answers customer
   - [Step 1. Configure `.env` & Start Local Models (`llama-server`)](#step-1-configure-env--start-local-models-llama-server)
   - [Step 2. Start Docker Services](#step-2-start-docker-services)
   - [Step 3. Prepare Data & Ingest the Knowledge Base into Qdrant](#step-3-prepare-data--ingest-the-knowledge-base-into-qdrant)
-  - [Step 4. Verify the Deployment](#step-4-verify-the-deployment)
+  - [Step 4. Verify the Deployment & Test Scenario](#step-4-verify-the-deployment--test-scenario)
 - [Development & Debugging](#development--debugging)
 
 ---
@@ -146,7 +146,7 @@ Implemented in `services/ai-service/src/rag/pipeline.py` (`run_rag_pipeline`):
    EMB_URL=http://127.0.0.1:8081/v1
    RRK_URL=http://127.0.0.1:8082/v1
    ```
-   > **External API & Docker note:** If you use an external OpenAI-compatible API or remote server instead of local `llama-server`, simply set its `LLM_URL` / `EMB_URL` / `RRK_URL`, model names, and API keys (`LLM_API_KEY`, `EMB_API_KEY`, `RRK_API_KEY`) directly in `services/ai-service/.env` and skip launching `serve_llama.py`. When running inside Docker, `127.0.0.1` / `localhost` URLs are automatically mapped to `host.docker.internal`, while external or LAN URLs are used as-is.
+   > **External API & Docker note:** If you use an external OpenAI-compatible API or remote server instead of local `llama-server`, simply set its `LLM_URL` / `EMB_URL` / `RRK_URL`, model names, and API keys (`LLM_API_KEY`, `EMB_API_KEY`, `RRK_API_KEY`) directly in `services/ai-service/.env` and skip launching `serve_llama.py`. When running inside Docker, `127.0.0.1` / `localhost` / `0.0.0.0` URLs are automatically mapped to `host.docker.internal`, while external or LAN URLs are used as-is.
 3. Start all three model servers:
    ```bash
    cd services/ai-service
@@ -190,12 +190,18 @@ uv run python -m scripts.ingest_kb --data-dir ../../data/knowledge-base --recrea
 
 *(You can also pass the `.zip` archive directly via `--data-dir ../../data/knowledge-base.zip`. Use `--recreate` whenever `.md` knowledge base files or chunking rules are updated.)*
 
-### Step 4. Verify the Deployment
+### Step 4. Verify the Deployment & Test Scenario
 
 - **Client Chat UI:** `http://localhost:3000`
 - **Operator Dashboard:** `http://localhost:3000/operator.html`
 - **AI Service Health Check:** `http://localhost:8000/health`
 - **Qdrant Dashboard:** `http://localhost:6333/dashboard`
+
+**End-to-end verification flow:**
+1. Open `http://localhost:3000`, enable the **«Отладка»** (Debug) toggle in the top bar, and pick a starter prompt or send your own question.
+2. Verify that the assistant responds using knowledge-base chunks (clickable source badges below the message + full chunk modal) and displays stage timings in the debug panel.
+3. Continue the consultation until the bot summarizes the request and asks for confirmation; confirm to open the **lead form** (`ФИО`, `Телефон`, `Компания`) and submit it.
+4. Open `http://localhost:3000/operator.html` and check the created dialog: lead details, bot-generated dialog summary, per-message profiler timings & chunks, and overall chat averages.
 
 ---
 
