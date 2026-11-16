@@ -17,7 +17,7 @@ An AI-powered consultant for MTS EnergyTool clients. The system answers customer
   - [Prerequisites](#prerequisites)
   - [Step 1. Configure `.env` & Start Local Models (`llama-server`)](#step-1-configure-env--start-local-models-llama-server)
   - [Step 2. Start Docker Services](#step-2-start-docker-services)
-  - [Step 3. Ingest the Knowledge Base into Qdrant](#step-3-ingest-the-knowledge-base-into-qdrant)
+  - [Step 3. Prepare Data & Ingest the Knowledge Base into Qdrant](#step-3-prepare-data--ingest-the-knowledge-base-into-qdrant)
   - [Step 4. Verify the Deployment](#step-4-verify-the-deployment)
 - [Development & Debugging](#development--debugging)
 
@@ -127,7 +127,8 @@ Implemented in `services/ai-service/src/rag/pipeline.py` (`run_rag_pipeline`):
 - **Docker** & **Docker Compose**
 - **llama.cpp** (`llama-server` available in `PATH`)
 - **Python 3.12+** & **uv**
-- GGUF models placed inside `services/ai-service/models/` (for example: `Qwen3.5-4B-UD-Q6_K_XL.gguf` or `Qwen3.5-9B-Q4_K_M.gguf`, `bge-m3-Q6_K.gguf`, and `bge-reranker-v2-m3-Q6_K.gguf`)
+- **Knowledge base archive / Markdown files** (the `data/` folder is gitignored and must be populated locally)
+- **GGUF models** placed inside `services/ai-service/models/` (gitignored; for example: `Qwen3.5-4B-UD-Q6_K_XL.gguf` or `Qwen3.5-9B-Q4_K_M.gguf`, `bge-m3-Q6_K.gguf`, and `bge-reranker-v2-m3-Q6_K.gguf`)
 
 ### Step 1. Configure `.env` & Start Local Models (`llama-server`)
 
@@ -135,8 +136,7 @@ Implemented in `services/ai-service/src/rag/pipeline.py` (`run_rag_pipeline`):
    ```bash
    cp services/ai-service/.env.example services/ai-service/.env
    ```
-2. Set the model filenames from `services/ai-service/models/` in `services/ai-service/.env`:
-   For instance we use while developoing:
+2. Set the model filenames from `services/ai-service/models/` in `services/ai-service/.env` (for example, in development we use):
    ```env
    LLM_MODEL=Qwen3.5-4B-UD-Q6_K_XL.gguf
    EMB_MODEL=bge-m3-Q6_K.gguf
@@ -171,7 +171,14 @@ On startup:
 - `ai-service` (`:8000`) connects to Qdrant and the local `llama-server` endpoints,
 - `frontend` (`:3000`) serves the UI and proxies `/api/` to `web-app`.
 
-### Step 3. Ingest the Knowledge Base into Qdrant
+### Step 3. Prepare Data & Ingest the Knowledge Base into Qdrant
+
+Because `data/` is excluded from Git (`.gitignore`), create the folder at the repository root and unpack the knowledge-base Markdown files into `data/knowledge-base/` first:
+
+```bash
+mkdir -p data/knowledge-base
+unzip path/to/knowledge-base.zip -d data/knowledge-base
+```
 
 Once `qdrant` and the embedding server (`8081`) are running, index the knowledge base:
 
@@ -181,7 +188,7 @@ uv sync
 uv run python -m scripts.ingest_kb --data-dir ../../data/knowledge-base --recreate
 ```
 
-*(Use `--recreate` whenever `.md` knowledge base files or chunking rules are updated.)*
+*(You can also pass the `.zip` archive directly via `--data-dir ../../data/knowledge-base.zip`. Use `--recreate` whenever `.md` knowledge base files or chunking rules are updated.)*
 
 ### Step 4. Verify the Deployment
 
