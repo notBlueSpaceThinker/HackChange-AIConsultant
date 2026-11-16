@@ -2,9 +2,13 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from src.schemas.domain.chunk import ScoredChunk
+from src.schemas.domain.chunk import Chunk, ScoredChunk
 from src.schemas.domain.profiler import RagProfiler, SummarizerProfiler
 from src.schemas.domain.state import ConsultantReply, Message
+
+
+def _chunk_title(chunk: Chunk) -> str:
+    return chunk.metadata.section_path or chunk.metadata.h1 or chunk.filepath.rsplit("/", 1)[-1]
 
 
 class MessageHistoryItem(BaseModel):
@@ -36,6 +40,7 @@ class SourceRef(BaseModel):
     doc_id: str
     chunk_id: str
     filepath: str
+    title: str = ""
     score: float
     text: str
 
@@ -46,6 +51,7 @@ class SourceRef(BaseModel):
             doc_id=str(chunk.doc_id),
             chunk_id=str(chunk.chunk_id),
             filepath=chunk.filepath,
+            title=_chunk_title(chunk),
             score=item.score,
             text=chunk.content,
         )
@@ -84,3 +90,25 @@ class SummarizerResponse(BaseModel):
     profiler: SummarizerProfiler = Field(
         default_factory=SummarizerProfiler, description="Timings of summarizer, seconds"
     )
+
+
+class DocumentChunkRef(BaseModel):
+    chunk_id: str
+    chunk_index: int
+    title: str = ""
+    text: str
+
+    @classmethod
+    def from_chunk(cls, chunk: Chunk) -> "DocumentChunkRef":
+        return cls(
+            chunk_id=str(chunk.chunk_id),
+            chunk_index=chunk.chunk_index,
+            title=_chunk_title(chunk),
+            text=chunk.content,
+        )
+
+
+class DocumentResponse(BaseModel):
+    doc_id: str
+    filepath: str
+    chunks: list[DocumentChunkRef]

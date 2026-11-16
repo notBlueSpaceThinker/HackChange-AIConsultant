@@ -1,47 +1,58 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Energytool - ИИ-консультант</title>
-  <link rel="stylesheet" href="src/styles/main.css">
+  <link rel="stylesheet" href="src/styles/main.css?v=12">
 </head>
+
 <body>
-<div class="app">
-  <aside class="sidebar" aria-label="История чатов">
-    <div class="sidebar-top">
-      <button type="button" class="new-chat-btn" id="newDialog">+ Новый диалог</button>
-    </div>
-    <div class="sidebar-label">Чаты</div>
-    <div class="chat-list" id="chatList"></div>
-  </aside>
-
-  <main class="chat">
-    <header>
-      <h1>
-        <img src="logo.svg" alt="МТС" class="logo">
-        <div class="brand">
-          <div><span>Energytool</span> консультант</div>
-          <span class="ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 5h16v11H10l-4 4v-4H4z"/><path d="M12 8.2l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="#FF0032" stroke="#FF0032" stroke-width="1"/></svg>ИИ-чат</span>
-        </div>
-      </h1>
-      <div class="actions">
-        <label class="toggle"><input type="checkbox" id="debugToggle"> Отладка</label>
+  <div class="app">
+    <aside class="sidebar" aria-label="История чатов">
+      <div class="sidebar-top">
+        <button type="button" class="new-chat-btn" id="newDialog">+ Новый диалог</button>
       </div>
-    </header>
-    <div id="messages"></div>
-    <form class="send" id="sendForm">
-      <textarea id="input" placeholder="Опишите вашу задачу…" required></textarea>
-      <button class="primary" id="sendBtn">Отправить</button>
-    </form>
-  </main>
+      <div class="sidebar-label">Чаты</div>
+      <div class="chat-list" id="chatList"></div>
+    </aside>
 
-  <aside class="debug" id="debug">
-    <h2>Режим отладки</h2>
-    <div id="debugList"><p class="empty">Здесь появятся время ответа и документы базы знаний.</p></div>
-  </aside>
-</div>
+    <main class="chat">
+      <header>
+        <h1>
+          <img src="logo.svg" alt="МТС" class="logo">
+          <div class="brand">
+            <div><span>Energytool</span> консультант</div>
+            <span class="ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"
+                stroke-linejoin="round" stroke-linecap="round">
+                <path d="M4 5h16v11H10l-4 4v-4H4z" />
+                <path d="M12 8.2l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="#FF0032" stroke="#FF0032"
+                  stroke-width="1" />
+              </svg>ИИ-чат</span>
+          </div>
+        </h1>
+        <div class="actions">
+          <a href="operator.html" class="nav-link">Панель оператора</a>
+          <label class="toggle"><input type="checkbox" id="debugToggle"> Отладка</label>
+        </div>
+      </header>
+      <div id="messages"></div>
+      <form class="send" id="sendForm">
+        <textarea id="input" placeholder="Опишите вашу задачу…" required></textarea>
+        <button class="primary" id="sendBtn">Отправить</button>
+      </form>
+    </main>
 
-<script type="module" src="src/main.js"></script>
+    <aside class="debug" id="debug">
+      <h2>Режим отладки</h2>
+      <div id="debugList">
+        <p class="empty">Здесь появятся время ответа и документы базы знаний.</p>
+      </div>
+    </aside>
+  </div>
+
+  <script type="module" src="src/main.js?v=14"></script>
 </body>
+
 </html>

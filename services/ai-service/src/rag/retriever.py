@@ -139,3 +139,33 @@ async def retrieve(
             expanded_chunks = await _expand_chunks(chunks)
         chunks.extend(expanded_chunks)
     return chunks
+
+
+async def get_document_chunks(doc_id: str) -> list[Chunk]:
+    client = get_async_qdrant_client()
+    doc_filter = models.Filter(
+        must=[
+            models.FieldCondition(
+                key="doc_id",
+                match=models.MatchValue(value=doc_id),
+            )
+        ]
+    )
+    chunks: list[Chunk] = []
+    offset: models.PointId | None = None
+    while True:
+        points, next_offset = await client.scroll(
+            collection_name=settings.qdrant.collection_name,
+            scroll_filter=doc_filter,
+            limit=100,
+            offset=offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        for point in points:
+            chunks.append(Chunk.from_payload(point.payload or {}))
+        if next_offset is None:
+            break
+        offset = next_offset
+    chunks.sort(key=lambda c: c.chunk_index)
+    return chunks

@@ -74,6 +74,10 @@ func main() {
 	r.HandleFunc("/chat", chatHandler.CreateChat).Methods(http.MethodPost)
 
 	r.HandleFunc("/chat", chatHandler.GetChatHistory).Methods(http.MethodGet)
+	r.HandleFunc("/chat", chatHandler.DeleteChat).Methods(http.MethodDelete)
+	r.HandleFunc("/document", chatHandler.GetDocument).Methods(http.MethodGet)
+	r.HandleFunc("/operator/chats", chatHandler.ListOperatorChats).Methods(http.MethodGet)
+	r.HandleFunc("/operator/chat", chatHandler.GetOperatorChat).Methods(http.MethodGet)
 
 	server := &http.Server{
 		Addr:    ":8080",

@@ -47,7 +47,7 @@ class LLMConfig(BaseConfig):
         default=0.2,
         validation_alias=AliasChoices("TEMPERATURE", "LLM_TEMPERATURE"),
     )
-    timeout: float = 60.0
+    timeout: float = 240.0
     context_window: int = 10000
     max_retries: int = 5
 

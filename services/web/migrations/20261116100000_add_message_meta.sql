@@ -1,0 +1,7 @@
+-- +goose Up
+ALTER TABLE message ADD COLUMN IF NOT EXISTS sources JSONB;
+ALTER TABLE message ADD COLUMN IF NOT EXISTS profiler JSONB;
+
+-- +goose Down
+ALTER TABLE message DROP COLUMN IF EXISTS profiler;
+ALTER TABLE message DROP COLUMN IF EXISTS sources;

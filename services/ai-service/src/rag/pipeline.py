@@ -47,6 +47,9 @@ async def run_rag_pipeline(
                 prompt=prompt,
                 history=history,
                 system_prompt=ConsultantPrompt.SYSTEM_PROMPT,
+                extra_body={
+                    "chat_template_kwargs": {"enable_thinking": False},
+                },
             )
 
         ready_for_lead = ConsultantPrompt.LEAD_MARKER in raw_answer

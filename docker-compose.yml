@@ -10,22 +10,22 @@ services:
     restart: unless-stopped
 
   postgres:
-      image: postgres:16-alpine
-      container_name: my_postgres
-      restart: unless-stopped
-      environment:
-        POSTGRES_USER: myuser
-        POSTGRES_PASSWORD: mypassword
-        POSTGRES_DB: mydb
-      ports:
-        - "5432:5432"
-      volumes:
-        - pgdata:/var/lib/postgresql/data
-      healthcheck:
-        test: ["CMD-SHELL", "pg_isready -U myuser -d mydb"]
-        interval: 5s
-        timeout: 5s
-        retries: 5
+    image: postgres:16-alpine
+    container_name: my_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U myuser -d mydb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   web-app:
     build:
@@ -51,5 +51,16 @@ services:
       RRK_URL: http://host.docker.internal:8082/v1
     ports:
       - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - web-app
+    restart: unless-stopped
 volumes:
   pgdata:
